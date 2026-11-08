@@ -1,4 +1,8 @@
+\ifdefined\PRRSubmissionVersion
+\documentclass[aps,prx,reprint,superscriptaddress,floatfix,longbibliography]{revtex4-2}
+\else
 \documentclass[a4paper,twocolumn,10pt,unpublished]{quantumarticle}
+\fi
 \pdfoutput=1
 % Submission manuscript, Quantum (quantum-journal.org) format.  The PRX
 % Quantum (revtex4-2) version this was reformatted from is frozen under
@@ -20,9 +24,17 @@
 \usepackage{enumitem}
 \usepackage{graphicx}
 \usepackage{xcolor}
+% REVTeX (PRR build) loads natbib itself.
+\ifdefined\PRRSubmissionVersion\else
 \usepackage[numbers]{natbib}
+\fi
 \usepackage{hyperref}
+% APS style in the PRR build: Fig., Eq., Sec., capitalized theorem names.
+\ifdefined\PRRSubmissionVersion
+\usepackage[nameinlink,capitalise]{cleveref}
+\else
 \usepackage[nameinlink,noabbrev]{cleveref}
+\fi
 \hypersetup{hidelinks}
 
 % quantumarticle pulls in revtex's ltxgrid/ltxutil (for widetext and the
@@ -32,6 +44,11 @@
 \makeatletter
 \let\switch@array\relax
 \makeatother
+% REVTeX's current name for the acknowledgements environment.
+\ifdefined\PRRSubmissionVersion
+\let\acknowledgements\acknowledgments
+\let\endacknowledgements\endacknowledgments
+\fi
 
 \newtheorem{definition}{Definition}
 \newtheorem{theorem}{Theorem}
@@ -63,7 +80,8 @@ Status outcomes are recorded separately and omitted from numerical curves.}
 
 \begin{document}
 
-\title{Representation-Dependent Recoverability in Quantum Compilation}
+\title{Memory--Output Tradeoffs for Merging Dispersed Rotations in
+Downstream Quantum Compilers}
 
 \author{Jinze Yang}
 \affiliation{School of Physics, Xidian University, Xi'an 710071, China}
@@ -79,278 +97,317 @@ School of Artificial Intelligence, Xidian University, Xi'an 710071, China}
 \affiliation{Shenzhen International Quantum Academy, Shenzhen 518048, China}
 \affiliation{Shenzhen Branch, Hefei National Laboratory, Shenzhen, 518048, China}
 
+% quantumarticle sets the title block before the abstract; REVTeX (PRR
+% build) requires the abstract before \maketitle.
+\ifdefined\PRRSubmissionVersion\else
 \maketitle
+\fi
 
 \begin{abstract}
-Fault-tolerant compilation can disperse high-level structure.
-Time-dependent and variational schedules split an accumulated phase
-across many rounds, gate synthesis approximates an angle by a
-Clifford+$T$ word whose individual gates do not encode that angle, and
-randomized compiling represents logical rotations through
-sign-randomized fragments and associated corrections.  These
-transformations preserve the intended computation within their stated
-equivalence and error conventions, but they change how cheaply a
-downstream compiler can recover the aggregate phase data.
-
-We formalize this representation-dependent recoverability for a
-downstream compiler---one positioned after scheduling, randomization,
-and lowering, such as a cloud transpiler or a control-stack stream
-optimizer.  The model charges two information channels: output
-irreversibly committed before the suffix arrives and a complete restart
-state crossing the cut, serialized into control, store, live-window,
-parameter, and intermediate-representation fields.  For an $r$-round
-modular accumulation of a commuting layer with $m$ generators, use an
-$\epsilon$-calibrated grid
-$Q_\epsilon=K_\epsilon+1=\Theta(1/\epsilon)$ with exact packing
-separation $2\sin(\pi/(2Q_\epsilon))$.  Any compiler that is correct on
-every valid stream, makes $p$ forward passes, and fails with probability
-at most $\delta$ obeys
-$\overline A_p+(2p-1)S\geq
-(1-\delta)m\log_2K_\epsilon-h_2(\delta)$, where $\overline A_p$ is
-committed output and $S$ is the serialized crossing-state cap.
-Within this scheduled family, sign normalization is a bijection of the
-residue alphabet, so the folded (compile-time) presentation of
-randomized compiling inherits the bound; no claim depends on tracking
-frames.  Under the additional, explicitly disclosed frame-tracked
-presentation, the Pauli frame is a sub-register of $S$.  A
-memory-capped block compiler attains the envelope within a constant
-factor, whereas direct semantic aggregation attains the compact-output
-corner with logarithmic state.
-
-We then measure the predicted channels rather than infer them.
-Instrumented reference compilers expose the state, IR, and commitment
-coordinates directly.
-The two information channels are not, however, always interchangeable
-at par, and we characterize when they are not.  A compiler whose committed prefix is
-executed at the cut---applied before the suffix is parsed, and so
-obliged to name the coordinates it acts on---pays a toll the state
-channel never pays: the entropy $\log_2\binom{m}{k}$ of its own
-mask specifying which $k$ coordinates are dispersed and committed early.  A compiler that
-defers, or that merely buffers what it has written, is handed that
-decision for free by the stream that follows and pays none of it.  We
-prove both directions and measure both under a preregistered protocol
-frozen before the run.  The measured per-generator toll matches
-$\log_2\binom{m}{k}/k$, stays approximately constant in $m$ at fixed
-$k/m$, and vanishes for a public mask and for the buffered control.
-
-One downstream experiment fixes the physical stakes without promoting
-them to a representation-independent theorem.  Under one disclosed
-fixed-total-error Clifford+$T$ synthesis and surface-code model, a
-materialize-first pipeline that retains separate rotations costs orders
-of magnitude more logical $T$ states and spacetime volume than the
-semantic-first pipeline; external tools that reconstruct the aggregate
-before synthesis are classified on the semantic-capable side.  The
-operational design rule is therefore to preserve scheduling and phase
-semantics until aggregation whenever the downstream interface and
-latency budget permit it.
+Time-dependent schedules split the angle of each rotation in a commuting
+layer across many rounds, and randomized compiling re-signs the pieces;
+when the per-round coefficients vary freely, no single instruction
+reveals the angle.  We ask what a compiler that sees only the resulting
+instruction stream must pay to merge the pieces into one rotation
+per term.  For a contiguous layer of $m$ independent rotations on an
+accuracy-$\epsilon$ grid, we prove that any compiler that is correct on
+every such stream and reads it in forward passes must spend about
+$m\log_2(1/\epsilon)$ bits.  They are counted as output committed while
+reading the earlier rounds plus state carried into the last round on each
+pass.  A one-pass compiler that emits one aggregated rotation per term
+attains this to leading order, and so does a multipass compiler that
+merges a different block of terms on each pass.  A one-pass stream
+optimizer with a much smaller buffer must emit unmerged output early.  Memory and early output are not always
+interchangeable.  Suppose $k$ of the $m$ terms, chosen at random, are
+split over two rounds, and the compiler emits all their first-round
+rotations before the second round, where they are applied.  That prefix
+then needs at least $\log_2\binom{m}{k}$ extra bits if each record must
+address its term, and a smaller amount, still linear in $k$ for fixed
+$k/m<1$, if it need only implement the rotations.  A prefix buffered
+until the next round is read need not pay extra.  Independently of the
+bound, on a four-qubit benchmark that repeats one diagonal layer, under
+one disclosed synthesis and surface-code model, Qiskit's highest preset
+optimization level, given the pre-lowered circuit, needs 385--1{,}753
+times the logical $T$ states of our compiler's output, which merges the
+repetitions but not the decomposition of each controlled phase; the
+ratio grows with the number of repetitions.  TKET's PauliSimp, given the
+same input, also merges across that decomposition and needs about half
+as many as ours.
 \end{abstract}
+
+\ifdefined\PRRSubmissionVersion
+\maketitle
+\fi
 
 
 \section{Introduction}
 \label{sec:introduction}
 
-A fault-tolerant compiler is not only a translator; some of its standard
-stages also disperse structure by design.  Time-dependent schedules and
-variational ansatz layers split a single
-accumulated phase across many
-rounds~\cite{farhi2014qaoa,peruzzo2014vqe,cerezo2021variational,childs2021trotter}.
-Gate synthesis dissolves an angle
-into a Clifford+$T$ word whose individual letters do not encode the angle
-on their own~\cite{dawson2006solovay,kliuchnikov2013fast,selinger2015efficient,ross2016optimal}.
-Randomized compiling replaces each rotation
-by a sign-randomized fragment so that coherent errors average
-away~\cite{wallman2016noise}.  Each of these transformations
-is correct, standard, and desirable for a distinct
-reason---yet each takes a quantity that was once written down in
-one place and scatters it across an instruction stream.
+Two standard steps of a fault-tolerant software stack can split
+rotation angles.  A time-dependent schedule of a commuting Hamiltonian,
+or a block of consecutive commuting layers with independent per-term
+parameters~\cite{farhi2014qaoa,herrman2022multiangle,peruzzo2014vqe,cerezo2021variational,childs2021trotter},
+applies an accumulated phase over several contiguous rounds, and when
+the per-round coefficients vary freely no single round reveals the total
+angle of a phase term.  Standard QAOA and VQE layers, and generic Trotter
+steps, are separated by non-commuting layers and do not by themselves
+form such blocks.  Randomized compiling then dresses each round with
+random Pauli gates, so that coherent errors average into stochastic Pauli
+noise~\cite{wallman2016noise,hashim2021randomized}; for a $Z$-type
+rotation, conjugation by a random Pauli flips the sign of its angle.  Both
+steps are correct and useful, and together they leave the total angle
+spread over many re-signed instructions (\cref{fig:intro-dispersal}a).
 
-This paper asks what it costs to reconstruct such a quantity.  Within
-the downstream model defined below, the answer is an
-information-theoretic tradeoff with two charged channels.  A
-compiler positioned downstream of the dispersal---a cloud transpiler
-receiving a flat program, or a stream optimizer inside a control
-stack---must either carry the scattered information in internal state as
-it goes, or commit output before the information has arrived and pay
-in output length.  All restart channels, including a reconstructed
-phase table or graph, are included in the state term.  The resulting
-frontier depends on the accuracy $\epsilon$ and the number of phase
-terms $m$; a separate synthesis/QRE experiment evaluates how one
-materialized-output path converts that difference into physical cost.
+Whether those pieces are merged before gate synthesis matters for
+fault-tolerant cost.  Synthesis approximates each rotation by a
+Clifford+$T$ word; at accuracy $\epsilon$ a generic angle costs about
+$3\log_2(1/\epsilon)$ $T$ gates, roughly 30 at
+$\epsilon=10^{-3}$~\cite{ross2016optimal}, and every $T$ gate consumes a
+distilled magic state~\cite{bravyi2005magic,litinski2019magic}.  A term
+left in $r$ pieces is synthesized $r$ times.  Merging commuting rotations
+is accordingly a standard optimization: phase folding and
+phase-polynomial
+methods~\cite{amy2014tdepth,nam2018automated,amy2019cnot,amy2025relational,albarghouthi2026lineartime},
+Pauli-gadget and ZX
+rewriting~\cite{cowtan2020phase,kissinger2020reducing,vandewetering2025optimal}
+all exploit it, and fault-tolerant resource estimates exploit commutation
+in a related way, replacing many equal-angle commuting rotations by a few
+rotations applied to their Hamming weight~\cite{gidney2018halving,kivlichan2020improved}.
+
+These methods assume an optimizer that sees, or can rebuild, a global
+description of the layer.  Some compilation instead runs downstream of
+the steps that dispersed it.  A transpiler service may receive a circuit
+already lowered to standard gates, for instance serialized as
+OpenQASM~\cite{cross2022openqasm}, rather than the operators from which it
+was synthesized, and qubit remapping after routing
+already shapes what finally reaches the device~\cite{nation2023suppressing}.
+A vendor pass post-processes an instruction stream that has already been
+emitted, and the classical control electronics process the instruction
+stream in real time, tracking Pauli gates in a frame to relax the timing
+of syndrome measurement and decoding~\cite{riesebos2017pauli}.
+We ask what a compiler in this position must pay to merge the pieces:
+how much information it must hold between rounds, and what it costs to
+commit output instead.
 
 \begin{figure}[tbp]
 \centering
 \includegraphics[width=\columnwidth]{figures/intro_dispersal_currencies.pdf}
-\caption{Dispersal, and the two currencies that undo it.  (a) A QAOA
-cost layer $e^{-i\gamma C}$ on $m$ edges is one commuting object
-carrying $m$ records.  Lowered under a digitized schedule it reaches a
-downstream compiler as $r$ contiguous rounds of grid residues,
-optionally sign-randomized and separated by Clifford records; the edge
-total $x_j$ is then a sum that no single record and no proper prefix
-reveals.  The mixer layers bound the block rather than sitting inside
-it: at generic angles they are non-Clifford $R_X$ rotations
-(\cref{rem:round-contiguity}).  The controlled-power ladder beneath is
-the complementary case---its rounds are contiguous, but round one
-already fixes the aggregate $\theta_j(2^r-1)$, so it supplies
-contiguity without dispersal (\cref{rem:dispersal}).  (b) At any cut
-the scattered information is either carried across in compiler state or
-committed to output.  When those committed rotations are synthesized
-separately, the disclosed QRE model converts the extra multiplicity into
-additional magic-state demand.
-\Cref{thm:w1-unified-frontier} states that the two cannot both be
-small, and \cref{prop:commitment-toll} charges the committed channel a
-further $\log_2\binom{m}{k}$ when the dispersal mask is private
-\emph{and} the prefix is executed at the cut rather than buffered;
-a buffered prefix pays none of it.}
+\caption{Dispersal and the two ways to undo it.  (a) A diagonal cost layer
+digitized under a schedule that varies each grid-rounded edge coefficient
+freely across $r$ contiguous rounds (a lowering we construct for a
+multi-angle QAOA cost layer) is optionally sign-randomized and reaches a downstream
+compiler as $r$ rounds of grid residues; no record and no prefix that
+ends before the last round determines an edge total $x_j$.  The bounds count $\mathbb F_2$-independent
+edge terms, $|V|-1$ of them for a connected graph.  A standard QAOA
+layer, in which every round rescales one weight vector, is not such a
+stream.  A controlled-power ladder (bottom) is also contiguous, but its
+first round already fixes the total when the powers are lowered exactly, so nothing is dispersed.  Boxes marked C are Clifford records that permute the
+generators; the mixer layers bound the block.  (b) At the boundary
+before the last round, the information about earlier rounds either
+crosses as compiler state or has already been committed as output.  The
+$\log_2\binom{m}{k}$ toll printed in (b) is the record-level one;
+commitment that need only implement the rotations pays a smaller toll,
+and buffered commitment pays none.}
 \label{fig:intro-dispersal}
 \end{figure}
 
-A concrete instance fixes the scale (\cref{fig:intro-dispersal}).  Take
-a single QAOA~\cite{farhi2014qaoa} cost layer on a $3$-regular MaxCut instance over $22$
-vertices, so $m=33$ edges, compiled to projective accuracy
-$\epsilon=10^{-3}$.  The synthesis grid at that tolerance has
-$L_\epsilon=\lfloor\pi/(8\arcsin(2\epsilon))\rfloor=196$ and hence
-$K_\epsilon=197$ distinguishable settings per edge
-(\cref{prop:epsilon-packing}), so each edge total is worth
-$\log_2 197=7.62$ bits and the layer as a whole carries $252$ bits, or
-about $31$ bytes, of aggregate information.  A deferred compact-output
-compiler must carry at least this order of information across the
-relevant cut.  In the materialize-first pipeline evaluated here, the
-alternative is to retain separate rotations and synthesize them
-individually; a generic non-Clifford rotation at this tolerance has a
-typical Ross--Selinger cost near
-$3\log_2(1/\epsilon)\approx30$ $T$ gates
-(\cref{rem:rs-grid}), supplied by distilled magic states rather than by
-the code itself~\cite{bravyi2005magic,litinski2019magic}.  This example
-motivates, but does not itself prove, the physical conversion.
-\Cref{sec:ft-consequences} evaluates it under a common error budget and
-finds a \QREMaterializeSpacetimeRatio$\times$ spacetime-volume ratio
-between the aggregate and materialized paths in the representative
-slice.
+Our first result answers this question for a commuting layer of $m$
+independent $Z$-type rotations whose angles lie on an
+$\epsilon$-calibrated grid and arrive split over $r$ rounds
+(\cref{fig:intro-dispersal}b).  Any compiler that is correct on every
+such stream, makes at most $p$ forward scans, and fails with
+probability at most $\delta<1/2$ obeys
+\begin{equation}\label{eq:frontier}
+ \overline A_p+pS\;\geq\;(1-\delta)\,m\log_2K_\epsilon-h_2(\delta)
+ -\lceil\log_2(p+1)\rceil
+\end{equation}
+(\cref{thm:w1-unified-frontier}).  Here $K_\epsilon=\Theta(1/\epsilon)$
+is the number of angles of the grid, which is also the largest number of
+rotations about a common axis that are pairwise $4\epsilon$-separated
+(\cref{lem:grid-calibration}); $K_\epsilon=785$ at $\epsilon=10^{-3}$.
+$\overline A_p$ is the expected number of output bits committed while the
+earlier rounds are being scanned, summed over passes, and $S$ caps the
+state carried across a crossing between the earlier rounds and the last.
+Of the $2p-1$ crossings that $p$ forward scans make, only the $p$ forward
+ones enter: a snapshot taken when the scan rewinds is determined by the
+preceding forward snapshot and the last round.  $S$ charges every channel
+through which a compiler restarted at a crossing could resume---RAM,
+caches, random seeds, any copy of the input it keeps, and any
+intermediate representation it builds---so rebuilding a global phase
+table is allowed but paid for.  The final output alone, encoded either
+relative to the known family or as a self-contained circuit, also needs
+$(1-\delta)m\log_2K_\epsilon-h_2(\delta)$ bits.  At $\delta=0$ a
+single-pass compiler that keeps the running sums and emits one aggregated
+rotation per term, the compact-output corner, attains \cref{eq:frontier}
+to leading order.  For $p$ passes, with the stream re-delivered by its source at the
+start of each pass as in standard multipass streaming, a block
+construction that merges a different block of terms on each pass also
+attains it to leading order, as long as $p$ is small compared with
+$m/\log m$; a compiler given the layer in aggregated form needs only
+$O(\log m\cdot\log(1/\epsilon))$ bits of state
+(\cref{prop:w1-block-hybrid,prop:w1-semantic-upper}).
 
-The same figure also delineates the scope of the statement, which is
-worth clarifying early because a figure is easier to overinterpret than a theorem.
-Two hypotheses are required, and different families supply them.  The
-rounds must be contiguous in the stream, and they must carry
-coefficients that vary freely from round to round.  A variational cost
-layer supplies the second within one block of consecutive commuting
-rounds, the mixer closing the block rather than lying inside it;
-controlled-power ladders and phase estimation supply the first and not
-the second, since a ladder's aggregate is already determined by its
-first round.  Clifford records---routing, \textsc{swap}, and the
-Pauli-frame insertions of randomized compiling itself---are interior
-and normalize away when they permute the declared generator set up to
-sign (\cref{lem:clifford-interleaving}).  The boundaries
-are stated in full in \cref{rem:round-contiguity,rem:clifford-scope}.
+Per term the price is $\log_2K_\epsilon\approx9.6$ bits at
+$\epsilon=10^{-3}$, and it grows linearly with $m$.  What
+\cref{eq:frontier} fixes is where those bits must live, and this is where
+dispersal enters.  The inequality would hold even if the last round were
+known in advance; what dispersal adds is that output written before the
+last round arrives cannot yet contain the merged angles.  A one-pass
+compiler whose state is small compared with $m\log_2K_\epsilon$, such
+as a stream optimizer with a buffer much smaller than the layer's
+$m\log_2K_\epsilon$ bits, must
+instead commit about that much unmerged output before the last round
+arrives.  A deferred compiler, which commits nothing early, must carry
+all of it across the crossings.  The proof is a standard multipass
+streaming
+argument~\cite{alon1999space,guha2008tight,kushilevitz1997communication}:
+once the last round is fixed, the merged angles are an injective
+function of the sum of the earlier rounds, and $p$ forward scans
+simulate a $(2p-1)$-message protocol, of which only the $p$ messages into
+the last round carry information about the earlier rounds.  A closely
+related classical
+setting, streaming with a read-only input and a write-only
+output~\cite{francois2014unidirectional}, likewise separates what an
+algorithm holds from what it has already written.  What is specific to
+compilation is the fooling family and the accounting.  When the
+grid-rounded coefficients vary freely from round to round,
+time-dependent schedules and layerwise-parameterized blocks emit exactly
+such fooling streams: the rounds of the schedule play the role of the
+shares, so no cryptographic secret sharing is added.  Randomized
+compiling of such a stream, in compile-time or frame-tracked form, keeps
+it a fooling stream; it does not create the dispersal, but in
+frame-tracked form it adds the Pauli frame to the state that must cross
+(\cref{prop:physical-instantiation,prop:frame-cross-cut}).
 
-Underlying all three dispersal mechanisms is a single representation
-problem.  A high-level circuit describing
-a commuting diagonal phase layer with $m$ generators can be compiled in at
-least two qualitatively different ways. A \emph{semantic-first} pipeline
-preserves the generator--coefficient structure, aggregates repeated
-coefficients, and lowers the aggregate representative once. A
-\emph{materialize-first} pipeline expands the same layer into a flat
-target-basis instruction stream and then attempts to recover aggregate
-structure from that stream, whether by local rewrites or by constructing
-a new global IR.  Both pipelines produce correct unitaries,
-but they expose very different resource profiles to downstream synthesis
-and fault-tolerant estimation.
+\Cref{eq:frontier} charges committed output and carried state at par.
+Our second result exhibits a setting in which they are not
+interchangeable, and shows what removes the gap.  Take a two-round
+stream in which only $k$ of the $m$ terms are dispersed, the $k$ drawn
+uniformly at random so that one compiler and one output code must serve
+every pattern, and suppose the compiler writes the first-round records
+of all $k$ dispersed terms before the boundary and that this prefix is
+applied there, before the next round is read---as in a control stack
+that streams instructions to the device.  If each record of the prefix must
+address its term, as when the stack forwards one addressed record per
+term, the prefix needs on average at least $\log_2\binom{m}{k}$ bits
+beyond its payload, about $h_2(k/m)/(k/m)$ bits per committed term,
+while a deferred compiler carries the same payload as state with only
+$O(\log m)$ bits of overhead (\cref{prop:commitment-toll}).  That addressing
+requirement is an assumption about the compiler
+(\cref{def:self-identifying}), and given it the bound is a source-coding
+count.  Write-once output does not imply the requirement, since a
+write-once compiler that buffers its prefix pays no toll, and neither does
+the applied unitary, because a term whose first-round residue is zero acts
+as the identity.  If the prefix need only implement
+the first-round rotations, a smaller toll remains, still linear in $k$:
+for fixed $\eta=k/m<1$ it grows at the asymptotic rate
+$h_2(\eta(1-1/Q))/\eta-h_2(1/Q)$ bits per committed term as
+$m\to\infty$, measured against a deferred compiler that stores the
+sign-folded residues (\cref{cor:unitary-toll}).  On the
+$\epsilon=10^{-3}$ grid the two bounds nearly coincide, asymptotically
+$1.99$ against $2$ bits per term at $k=m/2$; they separate only on coarse grids, $0.92$
+against $2$ at $Q=3$.  This unitary-level bound is proved but not
+measured.  Conversely, a compiler that keeps the same content as state,
+or that writes it irrevocably but applies it only after reading on, can
+learn the pattern from the stream that follows and need pay nothing
+extra.  The extra cost therefore requires the prefix to be executed at
+the cut; irrevocability alone does not create it.  It resembles the
+advice costs of online
+algorithms~\cite{bockenhauer2014string,boyar2017online}, the distinction
+between executed and merely written output parallels relaxed-irrevocability
+models of online computation~\cite{boyar2022relaxing}, and it
+separates two kinds of commitment that \cref{eq:frontier} does not
+distinguish: output that is executed at the cut and output that is
+merely written.
 
-This representation dependence is well known anecdotally. Phase-polynomial
-and Pauli-gadget
-methods~\cite{amy2014tdepth,nam2018automated,cowtan2020phase,amy2019cnot,beaudrap2020techniques}
-exploit algebraic structure before returning to a gate circuit.
-ZX-calculus
-methods~\cite{duncan2020graph,kissinger2020reducing,kissinger2020pyzx,vandewetering2020zx}
-provide a global representation in which phases can propagate and merge
-beyond local syntax. Architecture-aware
-compilers~\cite{martiel2022architecture,meijer2023architecture} and full-stack
-toolchains~\cite{watkins2024surfacecode} make representation choices that
-propagate into physical resource
-estimates~\cite{beverland2022assessing}.  We develop a
-quantitative account of \emph{how recoverable} an aggregate is from the
-representation in which it arrives---one that isolates representation from
-the other variables named in the model, proves lower bounds for the
-declared stream families, and measures the charged channels.  Physical resource estimation
-is then a consequence of such an account rather than a parallel goal:
-after the information tradeoff is established in bits, the observed
-rotation multiplicity of particular pipelines can be propagated through
-synthesis and error correction under a disclosed model.
+A software model of the two-round stream with $Q=3$, whose state at the
+cut between rounds is serialized and checked by restarting from it,
+makes both results concrete (\cref{sec:physical-dispersed}).  As
+the dispersed fraction of a layer varies, the state of our deferred
+compiler grows at a slope within 5\% of $\log_2 3+1$ bits per dispersed
+term at $m=32$, 64, and 128 (\cref{fig:eta-sweep}).  That is the
+cost of storing each residue and its frame bit separately, one bit above
+the floor of $\log_2 3$ proven for a deterministic one-pass zero-error
+compiler (\cref{prop:eta-pareto}); folding the frame bit
+into the residue would remove that bit.  Under a preregistered protocol,
+an explicit encoder that ranks the dispersal pattern combinadically
+attains $\log_2\binom{m}{k}/k$ to within byte rounding (at most 0.06 bits
+per term over the preregistered analysis cells), flat over a 16-fold
+range of $m$, and the buffered control, whose prefix is the deferred
+snapshot itself, pays zero at every dispersed fraction
+(\cref{fig:commit-toll}).  These are constructive checks of a
+source-coding bound, not tests that could have failed: they show that
+the record-level toll is attained and that buffering removes it.
+For external toolchains we report behavior
+(\cref{sec:external-baselines}).  On a four-qubit benchmark that
+repeats one commuting diagonal layer between Hadamard layers, Qiskit's
+optimization level~3 and staq's rotation folding return circuits that
+grow linearly with the number of repetitions, while our semantic
+reference returns a constant 42 gates and TKET's PauliSimp a small form
+of 52--73 gates.  Tools that rebuild a global representation are not
+defeated by dispersal itself: on the matched flat representations of
+\cref{sec:external-baselines}, including the masked-share stream, PyZX
+and TKET's PauliSimp (in its recommended native configuration) reach one
+rotation per active term.  The bounds
+price that rebuild in state; they do not forbid it.
 
-We address this gap by formalizing \emph{approximate recoverability}:
-given a target unitary $U$ and a fixed approximation tolerance $\epsilon$
-in projective operator norm, what compiler resources are required to emit
-an output within $\epsilon$ of $U$ from a lowered representation? The
-contributions of this paper are:
-\begin{enumerate}[leftmargin=1.5em]
-    \item An approximate recoverability framework with a budget-explicit
-    compiler model charging a unified bit-level cut budget
-    $B_{\mathrm{cut}}=B_{\mathrm{control}}+B_{\mathrm{store}}+
-    B_{\mathrm{window}}+B_{\mathrm{parameter}}+B_{\mathrm{IR}}$, together
-    with a self-delimiting growing-width token codec and explicit charges
-    for RAM/DAG/cache layout, dynamic passes, random seeds, output length,
-    and approximation error
-    (\cref{sec:framework}).
-    \item A cyclic $K_\epsilon$-ary packing with exact wrap margin,
-    $K_\epsilon=\Theta(1/\epsilon)$, and an $r$-round modular update
-    representation in which no token determines the aggregate.  For
-    failure probability $\delta$, separate output-code bounds
-    $\overline B_{\mathrm{rel}}^{\mathrm{out}},
-    \overline B_{\mathrm{self}}^{\mathrm{out}}
-    \geq(1-\delta)m\log_2K_\epsilon-h_2(\delta)$, and the explicit
-    forward-pass frontier
-    $\overline A_p+(2p-1)S\geq
-    (1-\delta)m\log_2K_\epsilon-h_2(\delta)$.  A memory-capped block
-    compiler reaches compact relative output with
-    $S=O((m/p)\log(K_\epsilon+1))$, giving a constant-factor upper
-    envelope; the older two-round $K=2,Q=3$ result retains its stronger
-    zero-error one-pass constant
-    (\cref{sec:packing,sec:reduction,sec:w1-unified-frontier}).
-    \item A characterization of when the two payment channels are
-    \emph{not} interchangeable at par, stated in both directions.  A
-    compiler whose committed prefix is executed at the cut---applied
-    before the suffix is parsed, and so obliged to name the coordinates
-    it acts on---pays $\log_2\binom{m}{k}$ bits beyond the payload, the
-    entropy of the dispersal mask specifying which $k$ coordinates are committed
-    early.  A compiler that defers, or that merely buffers what it has
-    written, pays none of it, because the stream that follows discloses
-    that decision for free.  We prove both clauses and measure both on
-    an instrumented device under a preregistered protocol frozen before
-    the run; the per-generator toll approaches
-    $h_2(k/m)/(k/m)$ rather than being independent of the mask density,
-    and the buffered control, which pays zero, is what fixes
-    the boundary between the two regimes
-    (\cref{def:self-identifying,prop:commitment-toll,fig:commit-toll}).
-    \item A representation-aware recovery pipeline with bounded recognition,
-    aggregation certificates, and conservative fallback, evaluated on a
-    complete nine-representation-by-five-compiler matrix and a separately
-    versioned campaign of local, semantic-capable, and authors' reference
-    baselines.  Bridge loss and non-completion statuses are reported separately
-    (\cref{sec:compiler,sec:validation}).
-    \item Direct event-level measurement of committed output, all five
-    cross-cut state fields, serialized IR, RSS, and time for echo, aggregation,
-    memory-capped hybrid, and materialized-IR reference compilers.
-    A separate fixed-total-error synthesis/QRE campaign then propagates
-    the observed rotation multiplicities of three certified pipelines
-    into physical units: logical $T$, data and factory qubits, cycles, factories,
-    runtime, and spacetime volume under two
-    versioned QEC models (\cref{sec:cut-tracing,sec:ft-consequences}).
-    \item A natural-workload campaign covering structured algorithm families,
-    two negative controls, and the complete six-factor ablation, together with
-    a normalized frozen-data registry, numeric provenance map, and
-    independent-directory reconstruction of theorem, benchmark, and QRE
-    subsets (\cref{sec:workloads,sec:reproducibility}).
-\end{enumerate}
+Finally, we propagate the rotation counts of three pipelines, each
+output carrying an exact symbolic or a dense unitary equivalence
+certificate, through checked Clifford+$T$ synthesis and two surface-code profiles under a common
+error budget (\cref{sec:ft-consequences}).  On the four-qubit
+benchmark at two sizes, each across 48 settings of total error,
+synthesis allocation, code profile, and factory count, the output of
+Qiskit's optimization level~3, applied to the pre-lowered circuit as is
+TKET's PauliSimp, while our compiler receives the unlowered one, keeps
+4{,}792 and 23{,}992 rotations, about 12 per repetition, where our
+merged reference keeps 22.  The reference merges the repetitions but
+keeps the three phase terms into which each controlled phase decomposes;
+a full phase-polynomial merge of this layer would keep 10.  It needs 385--501 times the logical $T$
+states of the merged reference at the smaller size and 1{,}367--1{,}753
+times at the larger, and 538--5{,}573 times the spacetime volume
+overall.  The ratios grow with the number of repetitions: Qiskit's $T$
+count grows about in proportion to it, while the merged reference's
+changes only through its 22 aggregate angles.  PauliSimp, which rebuilds
+the phase structure before synthesis and also merges across that
+decomposition, needs 0.44--0.54 times our $T$ states.  The inputs differ
+between the pipelines, so the ratios measure what is at stake when the
+repetitions reach synthesis unmerged, not the quality of Qiskit's
+optimizer.  This benchmark repeats a layer rather than dispersing it, so
+these numbers follow from one disclosed model and from the measured
+outputs, not from \cref{eq:frontier}, which counts bits rather than
+gates.
 
-The prior version of this work established a
-representation-dependent recoverability boundary for exact semantics on
-fixed-width witness families. Those results---the final-output lower
-bound for constant-budget finite-window transducers, the four-qubit
-irrational-angle independent-Pauli witness, and the rational CP witness
-with period $T=131040$---are retained here as an exact-semantics
-corollary (\cref{cor:exact-semantics-corollary}). The primary asymptotic
-axes are now the number of independent phase terms $m$ and the requested
-approximation tolerance $\epsilon$; the output lower bound scales as
-$m\log(1/\epsilon)$.
+The bounds concern compilers that see the stream after scheduling,
+randomization, and lowering, and that read it in forward scans.  They
+need the rounds of a layer to be contiguous, up to Clifford records that
+permute the generators, and their coefficients to vary freely from round
+to round (\cref{lem:clifford-interleaving},
+\cref{rem:round-contiguity}).  Non-commuting interleavings, as
+in a generic Trotter step, lie outside them, as do reverse scans and
+uncharged random access to the input.  A compiler that sees the layer before
+scheduling and lowering escapes them; for one that holds the
+$\lambda$-bit seed of a pseudorandom twirl, the separate $m$-bit lower
+bound on a tracked Pauli frame falls to $\lambda$ bits (\cref{rem:downstream-scope}).  The
+record-level extra cost of executed commitment is attained in our own
+software model; two preregistered attempts to detect it through
+third-party toolchains failed, so whether it is visible at a third-party
+interface remains open.  Read the other way, these limits are a design
+rule: where the interface and latency budget allow, randomize and lower
+late, and keep phase semantics until the coefficients have been merged.
+
+\Cref{sec:setup,sec:framework} define the operational setup and the
+budget-explicit compiler model with its cut accounting; the
+exact-semantics results for fixed-width circuits appear there as a
+corollary.  \Cref{sec:packing} builds the accuracy-calibrated packing,
+the dispersed streams and their physical sources, the dispersal--memory
+tradeoff, and the commitment toll.  \Cref{sec:reduction,sec:w1-unified-frontier}
+prove the output and frontier lower bounds and their matching
+constructions.  \Cref{sec:compiler,sec:validation,sec:workloads} describe
+the reference compiler and report the controlled measurements, external
+baselines, and application workloads, and \cref{sec:ft-consequences}
+propagates rotation counts into fault-tolerant resources.
+\Cref{sec:related-work,sec:discussion} discuss related work, scope, and
+limitations.
 
 
 \section{Operational Setup}
@@ -449,11 +506,15 @@ d_{\mathrm{proj}}$.
 
 \begin{proof}
 Let $\Theta\in[0,2\pi]$ be the length of a shortest closed arc containing
-the spectrum of $U^\dagger V$.  Centering that arc by a global phase gives
+the spectrum of $U^\dagger V$.  Centering that arc by a global phase puts
+every eigenvalue within angle $\Theta/2$ of $1$; conversely, for every
+phase the rotated spectrum still spans an arc of length $\Theta$, so some
+eigenvalue lies at angle at least $\Theta/2$ from $1$.  Hence
 \begin{equation*}
  d_{\mathrm{proj}}(U,V)=2\sin(\Theta/4).
 \end{equation*}
-The numerical-range formula for two unitary channels gives
+The numerical-range formula for two unitary
+channels~\cite{watrous2018theory} gives
 \begin{equation*}
  d_\diamond(\mathcal U,\mathcal V)=
  \begin{cases}
@@ -490,9 +551,11 @@ resources charged by the model below.
 
 \subsection{Budget-Explicit Compiler Model}
 
-We retain the fixed-width finite-window model only for the exact corollary
-and use the following more general randomized, random-access model for the
-growing-width approximate results.
+The exact corollary of \cref{sec:framework} uses a fixed-width
+finite-state transducer model, defined in \cref{rem:encoding-regimes}; the
+growing-width approximate results use the following randomized,
+random-access model.  The two models are not nested: the transducer model
+does not charge head positions, whereas the model below does.
 
 \begin{definition}[Sparse formal-parameter serialization]
 \label{def:parmodule}
@@ -566,9 +629,11 @@ A compiler $\mathcal A$ may use random-access RAM, stacks, hash tables,
 caches, DAG/graph IRs, and intermediate tapes; it may also select a finite
 number $p=p(I,\rho)$ of scans or passes dynamically from the input $I$ and
 a finite random seed/tape $\rho$.  The external input is append-only on its
-first exposure.  Any consumed prefix that remains available for a later
-scan---whether through a file, memory mapping, spool, or cache---is live
-compiler storage and is charged below.  The final output is write-once.
+first exposure; a new forward pass is re-delivered by the input source from
+the start of the stream and is accounted for by the pass count
+(\cref{def:w1-pass-accounting}).  Any other access to a consumed
+prefix---a copy kept for a later scan through a file, memory mapping,
+spool, or cache---is live compiler storage and is charged below.  The final output is write-once.
 At every execution cut $c$, serialize a complete restart snapshot in five
 disjoint fields:
 \begin{itemize}[leftmargin=1.5em]
@@ -603,6 +668,13 @@ B_{\mathrm{cut}}(c)
 \end{aligned}}
 \end{equation}
 where each summand is the literal bit length of the named serialization.
+Parameter payloads are the formal angle parameters of live tokens and IR
+objects; raw integer data that a compiler computes and keeps, such as
+residues or partial sums held in a packed RAM word, belong to
+$\mathsf{ser}_{\mathrm{store}}$ and are charged at their literal bit
+length.  Every upper bound below uses this convention, and no lower bound
+depends on it, because the lower bounds apply to any self-delimiting
+serialization whose control field records the emitted-prefix length.
 For a fixed run, $B_{\mathrm{cut}}$ is the maximum over its cuts.  For
 randomized compilers we use the worst-input expected budget
 \begin{equation}
@@ -611,12 +683,11 @@ randomized compilers we use the worst-input expected budget
  :=\max_{I\in\mathcal I}\mathbb E_\rho
        \bigl[\max_c B_{\mathrm{cut}}(c;I,\rho)\bigr].
 \end{equation}
-The quantities introduced above are therefore
-unambiguous bit measures:
-$Q:=\max_c B_{\mathrm{parameter}}(c)$ and
-$V:=\max_c B_{\mathrm{IR}}(c)$; no theorem below substitutes either one
-for the total $B_{\mathrm{cut}}$.  The final output is write-once and is
-charged separately by the output codes below.
+No theorem below substitutes a single field, such as
+$\max_cB_{\mathrm{parameter}}(c)$ or $\max_cB_{\mathrm{IR}}(c)$, for the
+total $B_{\mathrm{cut}}$.  The final output is write-once, is a codeword of
+a fixed prefix-free output code, and is charged separately by the output
+codes below.
 \end{definition}
 
 \begin{remark}[Model scope and escape channels]
@@ -624,10 +695,16 @@ charged separately by the output codes below.
 Equation~\eqref{eq:info-budget} charges all restart information, not only
 the finite-control state.  In particular, a ZX graph, phase-polynomial
 table, spilled update log, hash table, cache, random seed, or materialized
-intermediate tape is serialized in the indicated field, and all coefficients
-are serialized in $B_{\mathrm{parameter}}$.  Dynamic rescanning is allowed,
-but the pass schedule, heads, and any rereadable old input are part of the
-snapshot.  The five fields are disjoint by construction, so parameter bits
+intermediate tape is serialized in the indicated field; formal angle
+parameters are serialized in $B_{\mathrm{parameter}}$ and computed integer
+data in $B_{\mathrm{store}}$, so every coefficient is charged exactly
+once.  Internal rescanning of retained data is allowed,
+but the pass schedule, heads, and any retained copy of old input are part
+of the snapshot.  A pass re-delivered by the source is accounted by the
+pass count rather than by the snapshot, so a bound read off a single cut,
+such as \cref{thm:main-tradeoff}, requires the stream to be delivered
+once; the transcript bounds of \cref{sec:w1-unified-frontier} cover
+re-delivered passes.  The five fields are disjoint by construction, so parameter bits
 are not counted again as store, window, or IR structure.  A compiler may
 escape a RAM-only workspace lower bound by materializing a large IR, but it
 then pays the same bits in $B_{\mathrm{cut}}$.
@@ -642,15 +719,21 @@ using \cref{def:token-codec}; it assumes no family dictionary.  For a public
 packing-family dictionary
 $\mathcal F_m=(m,P_1,\ldots,P_m,K_{\mathrm{pack}},\Delta,B)$, the conditional code
 $E_{\mathrm{rel}}(\cdot\mid\mathcal F_m)$ has four modes: (i) an aggregate mode
-consisting of a self-delimiting header and a packed
-base-$K_{\mathrm{pack}}$ block of $m$
-digits; (ii) a literal mode containing complete target-basis records;
+consisting of a self-delimiting header, which declares a block length
+$b$, followed by the $m$ aggregate digits packed in base
+$K_{\mathrm{pack}}$ in consecutive blocks of $b$ digits, each written
+least significant bit first as a
+$\lceil b\log_2K_{\mathrm{pack}}\rceil$-bit integer, a final block of
+$b'<b$ digits taking $\lceil b'\log_2K_{\mathrm{pack}}\rceil$ bits; (ii) a literal mode containing complete target-basis records;
 (iii) an ordered-share mode whose header declares a split point and whose
 fixed public schedule permits generator addresses to be omitted from its
-residue slots, while retaining round-boundary and packed-block delimiters;
+residue slots, which are packed in base $Q$, while retaining
+round-boundary and packed-block delimiters;
 and (iv) a $p$-block hybrid mode whose header declares the pass blocks and
 passthrough coordinates and whose data section contains packed aggregate
-blocks and round-major residue blocks in that public order.  Define
+blocks and, for each round, the passthrough residues of that round packed
+in base $Q$, in the order in which one left-to-right scan per pass
+produces them, a public function of $(m,p,q,r)$.  Define
 \begin{equation}\label{eq:Bout-def}
 \begin{aligned}
  B_{\mathrm{rel}}(C\mid\mathcal F_m)
@@ -677,10 +760,12 @@ operating regime of a real-time fault-tolerant control stack, not a
 convenience abstraction.  Between rounds, the classical electronics
 adjacent to the quantum device holds decoder state, Pauli-frame
 records, and instruction buffers under hard latency and buffer
-budgets: corrections must be resolved before the next non-Clifford
-operation, and frame tracking exists precisely because unbounded
-buffering is unavailable at that
-boundary~\cite{riesebos2017pauli,watkins2024surfacecode}.  Distributed
+budgets: Pauli corrections can be tracked in a classical frame instead of
+being applied, which relaxes the timing constraints on syndrome
+measurement and decoding~\cite{riesebos2017pauli}, but they must be
+resolved before the next non-Clifford gate~\cite{knill2005realistically},
+and surface-code compilers are built as streaming pipelines that target
+real-time operation~\cite{watkins2024surfacecode}.  Distributed
 and modular architectures motivate the same scope from the
 interconnect side: a cross-module interaction splits the
 \emph{support} of a gate across modules while its coefficient stays
@@ -704,10 +789,19 @@ fixed-width.
 The exact corollary in this subsection fixes $n=n_0$, a precision bound
 $q$, a deterministic constant pass count $p_0$, and one finite alphabet
 $\Gamma_{B,n_0}^{\leq q}$; its unit is therefore a token over that fixed
-alphabet.  No such constant-cost token assumption is made in the
+alphabet.  A \emph{finite-window, finite-burst transducer} is, in this
+regime, a deterministic machine whose pass $i$ reads the tape written by
+pass $i-1$ (pass $1$ reads the lowered input) and writes a new tape; each
+pass is a subsequential transducer over $\Gamma_{B,n_0}^{\leq q}$ whose
+state consists of finite control, a persistent store, and a window of at
+most $w$ tokens, emits at most $\mu$ tokens per step, and has transitions
+that do not depend on head positions.  \emph{Constant budget} means that
+$p_0$, $w$, $\mu$, and the set of reachable states are independent of the
+repetition count $r$; head positions and intermediate tapes are not part
+of this budget.  No such constant-cost token assumption is made in the
 growing-width results.  There $n=m+1$ (or $n\geq m$), the pass count may be
-$p=p(m,I,\rho)$, and every input, output, RAM, and IR record is charged in
-bits by \cref{def:token-codec} and \eqref{eq:info-budget}.
+$p=p(m,I,\rho)$, and every input, output, RAM, IR record, and head is
+charged in bits by \cref{def:token-codec} and \eqref{eq:info-budget}.
 \end{remark}
 
 \begin{definition}[Fixed-width witness family]
@@ -771,8 +865,9 @@ $C_r = H_\Lambda D^r H_\Lambda^{-1}$ with
 $\mathcal{L}_B(C_r) = \Pi M^r \Sigma$, and unbounded noncollision
 (\cref{ass:unbounded-noncollision}). Let $\mathcal{A}$ be a uniform
 deterministic finite-window, finite-burst transducer with constant budget
-(constant $p,w,\mu$ and $B_{\mathrm{cut}}$) that is correct for every
-$r \geq 1$. Then there exist constants
+in the sense of \cref{rem:encoding-regimes} (constant $p,w,\mu$ and a
+finite reachable state set; head positions are not read) that is correct
+for every $r \geq 1$. Then there exist constants
 $h \geq 1$, $D \geq 1$ (depending on $\mathcal{A}$ and the witness but not
 $r$) such that for every $r \geq h + D$,
 \begin{equation}\label{eq:exact-output-bound}
@@ -789,27 +884,32 @@ final output; noncollision prevents collapse of distinct pump residues.
 
 \begin{corollary}[Finite-range tail form]
 \label{cor:finite-tail}
-Under finite-range noncollision (\cref{ass:noncollision}) with $N(R)=R$ on
-$1 \leq r \leq R$, $|T_p(r)| \geq (r-h-D+1)/D$ for $h+D \leq r \leq R$.
-For the rational CP witness, this applies only for $R < T = 131040$.
+Let $\mathcal A$ be as in \cref{cor:exact-semantics-corollary} but correct
+only for $1\leq r\leq R$, under finite-range noncollision
+(\cref{ass:noncollision}) with $N(R)=R$.  Then there are constants
+$h,D$, given by the pumpability data of $\mathcal A$'s final pair family,
+with $|T_p(r)| \geq (r-h-D+1)/D$ for $h+D \leq r \leq R$
+(\cref{app:cor:finite-tail}).  For the rational CP witness, whose exact
+period is $T=131040$, this applies for $R\leq T$.
 \end{corollary}
 
 \begin{corollary}[Counting toll for short outputs]
 \label{cor:counting-toll}
 If finite-range noncollision supplies $N(R)$ distinct targets, then every
-deterministic exact compiler satisfies
+deterministic exact compiler satisfies (\cref{app:cor:counting-toll})
 \begin{equation*}
  \max_{1\leq r\leq R}B_{\mathrm{self}}(T_p(r))
  \geq \left\lceil\log_2N(R)\right\rceil.
 \end{equation*}
-The same statement holds for $B_{\mathrm{rel}}(\cdot\mid\mathcal F)$
-when one fixed public dictionary $\mathcal F$ is used on the entire range.
+The same statement holds for any single fixed prefix-free output code,
+in particular for a family-relative code with one public dictionary used
+on the entire range.
 \end{corollary}
 
 The irrational independent-Pauli witness instantiates
 \cref{cor:exact-semantics-corollary} for all $r$ via
 \cref{lem:coeff-uniqueness}; the rational CP witness instantiates
-\cref{cor:finite-tail} on ranges $R < T$. These exact-semantics results
+\cref{cor:finite-tail} on ranges $R \leq T$. These exact-semantics results
 concern $\epsilon = 0$ and fixed width $n = 4$; the results below
 generalize to growing $m$ and expose the dependence on $\epsilon>0$.
 
@@ -826,9 +926,12 @@ $\mathcal F_{m,\epsilon}=\{U_x:x\in\mathcal X_{m,\epsilon}\}$ has
 pairwise projective separation greater than $2\epsilon$, a semantic
 description of $O(m)$ addressed records, and a lowered streaming
 description whose aggregate information may be dispersed across updates.
-The accuracy-dependent construction below has
-$|\mathcal X_{m,\epsilon}|=K_\epsilon^m$ with
-$K_\epsilon=\Theta(1/\epsilon)$.
+The accuracy-dependent constructions below have
+$|\mathcal X_{m,\epsilon}|=\bar K_\epsilon^m$ for the no-wrap codebook of
+\cref{prop:epsilon-packing} and $K_\epsilon^m$ for the cyclic grid of
+\cref{cor:w1-epsilon-cyclic}, with $\bar K_\epsilon,K_\epsilon=\Theta(1/\epsilon)$.
+The two alphabets differ by about a factor of $2$ and are kept apart
+notationally throughout.
 \end{definition}
 
 Every growing-width family in this paper---the codebook that carries the
@@ -863,8 +966,8 @@ regimes are used, and no result mixes them:
 \item \emph{no-wrap}: residues and aggregate live in $\mathbb Z$ and
 $(K-1)\Delta\leq\pi$, so distinct aggregates are distinct angles;
 \item \emph{cyclic}: $\Delta=2\pi/Q$ for a modulus $Q\geq3$, residues lie
-in $\mathbb Z_Q$, the aggregate is taken $\bmod\,Q$, and $K=Q-1$ unless
-stated otherwise.
+in $\mathbb Z_Q$, the aggregate is taken $\bmod\,Q$, and the aggregate
+alphabet is all of $\mathbb Z_Q$ ($K=Q$) unless stated otherwise.
 \end{itemize}
 Since the $P_j$ commute, $W=U_x$ up to global phase in either regime
 (\cref{prop:family-aggregates}).
@@ -965,19 +1068,20 @@ For $0<\epsilon\leq1/8$, set
 \begin{equation}\label{eq:epsilon-codebook}
 \begin{aligned}
  L_\epsilon&=\left\lfloor
-  \frac{\pi}{8\arcsin(2\epsilon)}\right\rfloor,&
- M_\epsilon&=4L_\epsilon,\\
- K_\epsilon&=L_\epsilon+1,&
- \Delta_\epsilon&=\frac{2\pi}{M_\epsilon}.
+  \frac{\pi}{4\arcsin(2\epsilon)}\right\rfloor,&
+ M_\epsilon&=2L_\epsilon,\\
+ \bar K_\epsilon&=L_\epsilon+1,&
+ \bar\Delta_\epsilon&=\frac{2\pi}{M_\epsilon}.
 \end{aligned}
 \end{equation}
-Then $K_\epsilon=\Theta(1/\epsilon)$,
-$(K_\epsilon-1)\Delta_\epsilon=\pi/2$ (so no coefficient wraps around
-$2\pi$), and the $K_\epsilon^m$ targets in
+Then $\bar K_\epsilon=\Theta(1/\epsilon)$,
+$(\bar K_\epsilon-1)\bar\Delta_\epsilon=\pi$ (the no-wrap condition of
+\cref{def:packing-construction} with equality), and the $\bar K_\epsilon^m$
+targets in
 \cref{def:packing-construction} obey
 \begin{equation}\label{eq:epsilon-separation}
  d_{\mathrm{proj}}(U_x,U_y)
- \geq2\sin(\Delta_\epsilon/4)\geq4\epsilon
+ \geq2\sin(\bar\Delta_\epsilon/4)\geq4\epsilon
  \qquad(x\neq y).
 \end{equation}
 \end{proposition}
@@ -985,25 +1089,27 @@ $2\pi$), and the $K_\epsilon^m$ targets in
 \begin{proof}
 The restriction $\epsilon\leq1/8$ gives $L_\epsilon\geq1$.
 Since $\arcsin(2\epsilon)=\Theta(\epsilon)$, the asserted order of
-$K_\epsilon$ follows.  The equality in the no-wrap statement is direct.
-Finally $L_\epsilon\leq\pi/(8\arcsin(2\epsilon))$, hence
-$\Delta_\epsilon/4=\pi/(8L_\epsilon)\geq\arcsin(2\epsilon)$.
+$\bar K_\epsilon$ follows.  The equality in the no-wrap statement is direct.
+Finally $L_\epsilon\leq\pi/(4\arcsin(2\epsilon))$, hence
+$\bar\Delta_\epsilon/4=\pi/(4L_\epsilon)\geq\arcsin(2\epsilon)$.
 Apply \cref{lem:packing-separation} and monotonicity of sine on this range.
 \end{proof}
 
 The next lemma shows that the alphabet size is intrinsic rather than
 designer-chosen: up to
-an explicit factor paid for the no-wrap property, $K_\epsilon$ is the
+an explicit factor paid for the no-wrap property, $\bar K_\epsilon$ is the
 metric-entropy count of pairwise distinguishable $Z$-rotations at the
 working separation, an intrinsic function of the tolerance rather than a
-construction parameter.
+construction parameter, and the cyclic alphabet size $K_\epsilon=Q_\epsilon$
+used by the dispersed streams equals that count exactly.
 
 \begin{lemma}[Synthesis-grid calibration]
 \label{lem:grid-calibration}
 For $0<\epsilon\leq1/8$, let $N(\epsilon)$ be the maximum cardinality of
 a set of single-axis rotations $\{R_P(\theta):\theta\in\mathbb
-R/2\pi\mathbb Z\}$ that is pairwise $4\epsilon$-separated in
-$d_{\mathrm{proj}}$, and let $g_\epsilon:=4\arcsin(2\epsilon)$.  Then
+R/2\pi\mathbb Z\}$ that is pairwise $4\epsilon$-separated, i.e.\ with
+pairwise $d_{\mathrm{proj}}\geq4\epsilon$, and let
+$g_\epsilon:=4\arcsin(2\epsilon)$.  Then
 \begin{equation}\label{eq:grid-calibration}
  N(\epsilon)=\left\lfloor\frac{2\pi}{g_\epsilon}\right\rfloor,
  \qquad
@@ -1011,13 +1117,17 @@ $d_{\mathrm{proj}}$, and let $g_\epsilon:=4\arcsin(2\epsilon)$.  Then
 \end{equation}
 and the alphabet of \cref{prop:epsilon-packing} satisfies
 \begin{equation}\label{eq:grid-calibration-K}
- \frac{N(\epsilon)}{4}\;<\;K_\epsilon\;<\;\frac{N(\epsilon)}{4}+\frac32 .
+ \frac{N(\epsilon)}{2}\;<\;\bar K_\epsilon\;<\;\frac{N(\epsilon)}{2}+\frac32 ,
+\end{equation}
+while the cyclic modulus of \cref{cor:w1-epsilon-cyclic} satisfies
+\begin{equation}\label{eq:grid-calibration-Q}
+ Q_\epsilon=K_\epsilon=N(\epsilon).
 \end{equation}
 Moreover the grid step is separation-tight,
-$g_\epsilon\leq\Delta_\epsilon\leq g_\epsilon(1+O(\epsilon))$, so the
-factor $4$ in \eqref{eq:grid-calibration-K} is exactly the restriction of
-the coefficient range to the quarter period $[0,\pi/2]$ imposed by the
-no-wrap condition.
+$g_\epsilon\leq\bar\Delta_\epsilon\leq g_\epsilon(1+O(\epsilon))$.  The
+factor $2$ in \eqref{eq:grid-calibration-K} is forced by the no-wrap
+condition: $(K-1)\Delta\leq\pi$ with $\Delta\geq g_\epsilon$ allows at
+most $\pi/g_\epsilon+1$ symbols.
 \end{lemma}
 
 \begin{proof}
@@ -1033,16 +1143,23 @@ Hence pairwise $4\epsilon$-separation is equivalent to pairwise circular
 distance at least $g_\epsilon$, because $2\sin(g_\epsilon/4)=4\epsilon$
 exactly.  The maximum number of points of a circle of circumference
 $2\pi$ with pairwise circular distance at least $g_\epsilon$ is
-$\lfloor2\pi/g_\epsilon\rfloor$, attained by equal spacing.  The
+$\lfloor2\pi/g_\epsilon\rfloor$: ordering the points around the circle,
+the gaps between consecutive points sum to $2\pi$ and each is at least
+$g_\epsilon$, and equal spacing attains the bound.  The
 two-sided bound follows from $x\leq\arcsin x\leq(\pi/2)x$ on $[0,1]$.
 For \eqref{eq:grid-calibration-K}, put $y=\pi/(2\arcsin(2\epsilon))$, so
 that $N(\epsilon)=\lfloor y\rfloor$ and, by
-\eqref{eq:epsilon-codebook}, $K_\epsilon=\lfloor y/4\rfloor+1$.  Then
-$K_\epsilon>y/4\geq N(\epsilon)/4$ and
-$K_\epsilon\leq y/4+1<(N(\epsilon)+1)/4+1=N(\epsilon)/4+5/4$.  Finally
-$\Delta_\epsilon=\pi/(2L_\epsilon)$ with
-$\pi/(8\arcsin(2\epsilon))-1\leq L_\epsilon
-\leq\pi/(8\arcsin(2\epsilon))$ gives the step bounds.
+\eqref{eq:epsilon-codebook}, $\bar K_\epsilon=\lfloor y/2\rfloor+1$.  Then
+$\bar K_\epsilon>y/2\geq N(\epsilon)/2$ and
+$\bar K_\epsilon\leq y/2+1<(N(\epsilon)+1)/2+1=N(\epsilon)/2+3/2$.  For \eqref{eq:grid-calibration-Q},
+$Q_\epsilon=\lfloor\pi/(2\arcsin(2\epsilon))\rfloor=\lfloor2\pi/g_\epsilon\rfloor
+=N(\epsilon)$ directly from the definitions, and $K_\epsilon=Q_\epsilon$ by
+\cref{cor:w1-epsilon-cyclic}.  Finally
+$\bar\Delta_\epsilon=\pi/L_\epsilon$ with
+$\pi/(4\arcsin(2\epsilon))-1<L_\epsilon
+\leq\pi/(4\arcsin(2\epsilon))$ gives the step bounds.  For the factor
+$2$, a no-wrap alphabet with step $\Delta\geq g_\epsilon$ has
+$(K-1)g_\epsilon\leq\pi$.
 \end{proof}
 
 \begin{remark}[Clifford+$T$ synthesis calibration of the grid]
@@ -1050,14 +1167,18 @@ $\pi/(8\arcsin(2\epsilon))-1\leq L_\epsilon
 The packing grid is chosen by the target accuracy; it is not itself a
 Ross--Selinger synthesis lattice.  Ancilla-free
 Clifford+$T$ approximation of an arbitrary $z$-rotation to within
-$\epsilon$---in the up-to-phase metric matched to $d_{\mathrm{proj}}$
-\cite[Def.~9.1, Cor.~9.5, Alg.~9.8]{ross2016optimal}---is achieved by
-the algorithm of \cite[Alg.~7.6]{ross2016optimal} with $T$-count
-$3\log_2(1/\epsilon)+O(\log\log(1/\epsilon))$ in the typical case and
-$c+4\log_2(1/\epsilon)$ for a constant $c\approx10$ in the worst case
-\cite[Prop.~8.8 and \S8.3]{ross2016optimal}; given a factoring oracle
-the returned $T$-count is exactly optimal per instance
-\cite[Prop.~8.2]{ross2016optimal}.  Generic non-Clifford angles therefore
+$\epsilon$ up to a phase, which is exactly approximation in
+$d_{\mathrm{proj}}$ \cite[Def.~9.1, Cor.~9.5]{ross2016optimal}, is solved
+by \cite[Alg.~9.9]{ross2016optimal}, which runs the fixed-phase
+algorithm \cite[Alg.~7.6]{ross2016optimal} and its up-to-phase variant
+\cite[Alg.~9.8]{ross2016optimal} and keeps the cheaper circuit.  Its
+$T$-count is $3\log_2(1/\epsilon)+O(\log\log(1/\epsilon))$ in the
+typical case \cite[Abstract; Conj.~8.10]{ross2016optimal} and at most
+$c+4\log_2(1/\epsilon)$ for a constant $c\approx10$
+\cite[\S8.3]{ross2016optimal}; given a factoring oracle the returned
+$T$-count is optimal per instance, and without one it is near-optimal
+under a number-theoretic hypothesis
+\cite[Prop.~9.10; Hyp.~8.3]{ross2016optimal}.  Generic non-Clifford angles therefore
 have synthesis cost $\Theta(\log(1/\epsilon))$, but special grid points
 such as the identity or Clifford angles can be cheaper.  The
 fixed-total-error campaign of \cref{sec:ft-consequences} does not assume a
@@ -1065,13 +1186,14 @@ uniform per-angle cost: it synthesizes every distinct angle with staq's
 \texttt{grid\_synth} implementation and records the checked result.
 Consequently the information term $m\log_2K_\epsilon$ and the generic
 synthesis scale are both $\Theta(m\log(1/\epsilon))$, while no
-angle-by-angle $T$-count equality is claimed.  The constant in the
-packing entropy is pinned by \eqref{eq:grid-calibration-K}; both directions
-of the calibration are stated as two-sided bounds.  For the cyclic grid used by the dispersed
-streams (\cref{cor:w1-epsilon-cyclic}) the identification is exact:
-$Q_\epsilon=\lfloor\pi/(2\arcsin(2\epsilon))\rfloor=N(\epsilon)$, so the
-sharing modulus equals the metric-entropy count itself, and the factor
-$4$ above concerns only the no-wrap subfamily.
+angle-by-angle $T$-count equality is claimed.  For the cyclic grid used by the dispersed
+streams and by \cref{thm:w1-unified-frontier} the identification is exact,
+$Q_\epsilon=N(\epsilon)$ by \eqref{eq:grid-calibration-Q}, so the sharing
+modulus equals the metric-entropy count itself; at $\epsilon=10^{-3}$,
+$Q_\epsilon=K_\epsilon=785$.  The factor $2$ in
+\eqref{eq:grid-calibration-K} concerns only the no-wrap codebook
+$\bar K_\epsilon$ ($\bar K_\epsilon=393$ at $\epsilon=10^{-3}$) used by
+\cref{thm:output-counting}.
 \end{remark}
 
 \subsection{Streaming Encoding}
@@ -1150,8 +1272,10 @@ emission point~\cite{knill2005realistically,riesebos2017pauli}.
 \begin{lemma}[Clifford interleaving]
 \label{lem:clifford-interleaving}
 Let the $r$ rounds of a scheduled stream be separated by Clifford
-records, and let $D_{t-1}$ denote the accumulated Clifford emitted
-before round $t$ (so $D_0=I$).  Suppose each $D_{t-1}$ carries the
+records that are fixed across the family (they do not depend on the
+residues or signs), and let $D_{t-1}$ denote the accumulated Clifford
+emitted before round $t$, including any Clifford records before the first
+round.  Suppose each $D_{t-1}$ carries the
 generating set into itself up to sign and permutation,
 \begin{equation}\label{eq:clifford-normalizes}
  D_{t-1}^\dagger P_jD_{t-1}=\varepsilon_j^{(t)}P_{\pi_t(j)},
@@ -1192,7 +1316,8 @@ formality.  It holds for Pauli-frame layers ($\pi_t=\mathrm{id}$,
 $\varepsilon$ the frame signs), hence for the twirl insertions of
 randomized compiling itself; and for routing or SWAP layers
 whose induced qubit relabeling permutes the generating set, such as the
-cyclic shifts of the chain characters $a_j=e_j+e_{j+1}$.  It fails for a
+reflection $q\mapsto n+1-q$ of a chain, which maps the chain characters
+$a_j=e_j+e_{j+1}$ to $a_{n-j}$.  It fails for a
 general Clifford: if $D_{t-1}$ normalizes the diagonal group but sends
 some $P_j$ to a product of generators rather than to a generator, the
 rounds accumulate in different bases and the coordinatewise structure of
@@ -1210,9 +1335,9 @@ lowering: the input is the emitted record stream, and the upstream
 context---the pre-randomization circuit, the schedule generator, and
 the twirl seed---is not part of it.  This position is not hypothetical;
 it is where much practical compilation runs: (1) a cloud transpiler
-receiving a flat QASM/QIR program without access to the user's
-high-level intent~\cite{javadi2024qiskit}; (2) a real-time stream
-optimizer inside the classical control
+receiving a lowered OpenQASM program without access to the user's
+high-level intent~\cite{cross2022openqasm}; (2) the real-time processing of
+the instruction stream inside the classical control
 stack~\cite{riesebos2017pauli}; (3) a vendor-side pass that
 post-processes an already emitted instruction stream.  If the compiler
 can see the circuit before randomization and lowering, the theorems do
@@ -1236,8 +1361,8 @@ that the grid-rounded coefficients are free to vary independently across
 the $r$ rounds.  Under this coefficient-freedom hypothesis, the resulting
 stream family satisfies the hypotheses of
 \cref{def:w1-dispersed-stream}: every aggregate
-$x\in[K]_0^m$, $K=Q-1$, is realized by some valid stream, and no individual token
-or proper prefix determines it.
+$x\in\mathbb Z_Q^m$ is realized by some valid stream, and no individual
+token, and no prefix that ends before the last round, determines it.
 \begin{enumerate}[leftmargin=1.7em,label=(\alph*)]
 \item \emph{Time-dependent Trotterization.}  For a commuting
 time-dependent Hamiltonian $H(t)=\sum_jc_j(t)P_j$ with step $\tau$,
@@ -1257,15 +1382,29 @@ its first round determines the aggregate.  This is the balanced-encoding
 degeneracy of \cref{rem:dispersal}.
 \end{proposition}
 
+The coefficient-freedom hypothesis carries the weight of
+\cref{prop:physical-instantiation}; the proposition records which streams
+can occur, not that a given pipeline produces them.  The two halves of the
+hypothesis play different roles.  The frontier inequality of
+\cref{thm:w1-unified-frontier} needs only the earlier rounds to range over
+$\mathbb Z_Q^m$; it would hold even with a fixed last round.  The reading
+that early output must be unmerged needs the last round to be free as
+well: if, given the earlier rounds, the last-round residue of each term is
+confined to a few grid steps, as for a schedule with small increments, a
+compiler can commit part of each merged angle early.  The workloads of
+\cref{sec:workloads} repeat identical terms within each commuting block,
+or separate blocks by non-commuting layers; they therefore exercise the
+compiler's aggregation, not this bound.
+
 \begin{proof}
 In (a) and (b) the stated coefficient-freedom hypothesis makes the round
 coefficients unconstrained across rounds,
 so every residue sequence---in particular every valid share
 decomposition of \cref{def:w1-dispersed-stream}---arises from some
 schedule, and \cref{prop:w1-stream-equivalence} supplies realizability
-and token privacy verbatim.  For prefixes: after any proper prefix, a
-final-round residue choice reaches every aggregate in $\mathbb Z_Q^m$,
-hence every $x\in[K]_0^m$.  In (c), sign normalization $a\mapsto sa$ is
+and token privacy verbatim.  For prefixes: after any prefix that ends
+before the last round, a final-round residue choice reaches every
+aggregate in $\mathbb Z_Q^m$.  In (c), sign normalization $a\mapsto sa$ is
 a bijection of $\mathbb Z_Q$ for either sign, so normalizing every
 record maps the signed family onto the unsigned family
 record-for-record, and the same properties transfer; the distributional
@@ -1300,7 +1439,8 @@ commuting-block Trotterization, a contiguous diagonal ladder---and not
 about the interleaved structure of a generic Trotter step.  The same
 qualification applies to (b): variational cost layers separated by
 mixers are aggregatable only within a block of consecutive commuting
-rounds, and it is such a block that (b) describes.  Note that for a
+rounds, and it is such a block that (b) describes, with independent
+per-term parameters $\theta_j^{(t)}$.  Note that for a
 \emph{fully} commuting $H$ the Trotter error vanishes and the round
 structure is a scheduling choice rather than an accuracy requirement;
 what the bounds charge is precisely that choice, made upstream and
@@ -1323,72 +1463,92 @@ no intervening non-commuting structure (the
 families of \cref{sec:workloads}).  Round coefficients that vary freely
 across rounds---what the fooling families of
 \cref{prop:physical-instantiation} require---are supplied by
-time-dependent schedules and by layerwise-parameterized ansatz blocks.
+time-dependent schedules and by layerwise-parameterized ansatz blocks
+whose per-term coefficients vary independently, such as multi-angle
+QAOA~\cite{herrman2022multiangle}.  A standard QAOA cost layer, in which
+every round rescales one weight vector by a common angle $\gamma_t$, is
+contiguous but not coefficient-free: one round fixes the aggregate up to
+a scalar and rounding, so its streams are not a fooling family and the
+bounds do not constrain such an instance.  The theorems also require
+$\mathbb F_2$-independent generators (\cref{def:phase-family}); for the
+edge characters $Z_uZ_v$ of a connected graph on $|V|$ vertices the rank
+is $|V|-1$, and the bounds apply with $m=|V|-1$ to the edges of a
+spanning tree.
 \end{remark}
 
 \begin{proposition}[Frame as cross-cut state]
 \label{prop:frame-cross-cut}
 Let a compiler in the charged model of \cref{def:compiler} be correct
 within projective error $\epsilon<\sin(\pi/(2Q))$ on every valid twirled
-stream of \cref{def:scheduled-stream}, and fix any inter-round cut $c$
-with committed prefix output of length $\ell_{\mathrm{pre}}$ and
-five-field snapshot budget $B_{\mathrm{cut}}(c)$.
+stream of \cref{def:scheduled-stream}.
 \begin{enumerate}[leftmargin=1.9em,label=(\roman*)]
 \item In both presentation modes the normalized stream is a valid
 dispersed stream of \cref{def:w1-dispersed-stream}, so
 \cref{thm:w1-one-pass-mask,thm:w1-unified-frontier} apply verbatim to
 the physical stream.
-\item In tracked mode,
+\item In tracked mode, the pending-frame classes alone force the
+following.  If the compiler is deterministic, zero-error, and reads the
+stream in one forward pass, then at any inter-round cut $c$, with
+committed prefix output of length $\ell_{\mathrm{pre}}$ and snapshot budget
+$B_{\mathrm{cut}}(c)$, the worst case over valid twirled streams obeys
 \begin{equation}\label{eq:frame-lower}
- \ell_{\mathrm{pre}}+B_{\mathrm{cut}}(c)\geq m
+ \max\bigl(\ell_{\mathrm{pre}}+B_{\mathrm{cut}}(c)\bigr)\geq m .
 \end{equation}
-already from the pending-frame classes alone, and the frame register is
-live classical restart state, serialized in
-$\mathsf{ser}_{\mathrm{store}}$ (or $\mathsf{ser}_{\mathrm{control}}$)
-by \cref{def:compiler}.  For a deferred compiler with
-$\ell_{\mathrm{pre}}=O(\log m)$, the crossing snapshot therefore
+If it is randomized, correct with probability at least $1-\delta$,
+$\delta<1/2$, and makes at most $p$ forward passes, then
+\begin{equation}\label{eq:frame-lower-multipass}
+ \overline A_p+\overline\Sigma^{\to}_p
+ \geq(1-\delta)m-h_2(\delta)-\lceil\log_2(p+1)\rceil .
+\end{equation}
+The frame register is live classical restart state and is therefore
+charged in the snapshot by \cref{def:compiler}.  For a deferred one-pass
+compiler with $\ell_{\mathrm{pre}}=O(\log m)$, the crossing snapshot
 carries $m-O(\log m)$ bits that determine the frame action on the $m$
-generators: the Pauli frame is a sub-register of the cross-cut state.
+generators.
 \item In folded mode the flush map is a prefix-measurable sign
-normalization, injective on sign components; the same $m$ bits appear
-as the sign components of the signed residues, serialized in
-$\mathsf{ser}_{\mathrm{parameter}}$ or $\mathsf{ser}_{\mathrm{store}}$,
-and the bounds of (i) are unchanged.
+normalization, injective on the sign components used below; the same
+information appears in the signed residues, and
+\eqref{eq:frame-lower} and \eqref{eq:frame-lower-multipass} hold with
+the same fooling family presented in folded records.
 \end{enumerate}
 \end{proposition}
 
 \begin{proof}
-(i) Sign normalization is a bijection of $\mathbb Z_Q$, so normalizing
-every record maps the twirled family bijectively onto the family of
+(i) Sign normalization is a bijection of $\mathbb Z_Q$ for either sign, so
+normalizing every record maps the twirled family onto the family of
 \cref{def:w1-dispersed-stream} while preserving aggregates, record
-boundaries, and cut positions; the cited theorems apply to the image
-and pull back verbatim.
+boundaries, and cut positions; each normalized stream is the image of the
+twirled streams that differ only in their sign patterns.  The cited
+theorems apply to the image and pull back verbatim.
 
 (ii) Take prefixes whose residue fields emit the residue $1$ exactly
 once on each generator and are otherwise zero, and whose sign fields
 realize the frame class $\sigma\in\{\pm1\}^m$; the residue fields are
 identical across classes.  Choose one common suffix adding a residue
-$a_j$ on generator $j$ with both $a_j+1\bmod Q$ and $a_j-1\bmod Q$ in
-$[K]_0$; such $a_j$ exists for every $Q\geq3$ ($a_j=2$ for $Q=3$,
-$a_j=1$ otherwise).  The completed aggregates
+$a_j$ on generator $j$, for instance $a_j=0$.  The completed aggregates
 $x_j=\sigma_j+a_j\bmod Q$ then differ between two classes in every
-coordinate where the frames differ, and both completions are valid
-family instances.  By \cref{thm:w1-exact-separation} the corresponding
-targets are separated by $2\sin(\pi/(2Q))>2\epsilon$, so a correct
-compiler must emit different final outputs; but a deterministic suffix
-computation is a function of the snapshot and the common suffix, so two
-runs with equal committed prefix and equal snapshot emit identical
-final outputs.  The pair (prefix output, snapshot) is therefore
-injective on the $2^m$ frame classes; prefix-freeness of the declared
-serializers and Kraft's inequality give \eqref{eq:frame-lower}.  The
-frame register is classical restart state, so its bits lie in the named
-fields; subtracting the deferred-output cap bounds the snapshot share.
+coordinate where the frames differ, because $2\not\equiv0\pmod Q$ for
+$Q\geq3$, and all completions are valid family instances.  By
+\cref{thm:w1-exact-separation} the corresponding targets are separated by
+$2\sin(\pi/(2Q))>2\epsilon$.  For a deterministic one-pass compiler the
+suffix computation is a function of the snapshot and the common suffix;
+a run that halted before $c$ would give the same output for two classes
+with different targets, so every run reaches $c$, and the pair (prefix
+output, snapshot) must be injective on the $2^m$ frame classes; prefix-freeness of the self-delimiting snapshot followed by
+the committed prefix and Kraft's inequality give \eqref{eq:frame-lower}.
+For the multipass statement, draw $\sigma$ uniformly and repeat the
+forward-transcript argument of \cref{thm:w1-unified-frontier} with the
+common suffix in place of $V$: the forward transcript determines the
+final output, the decoder recovers $\sigma$ with error at most $\delta$,
+and Fano's inequality gives $I(\sigma;T)\geq(1-\delta)m-h_2(\delta)$.
+The frame register is classical restart state, so its bits lie in the
+named fields; subtracting the deferred-output cap bounds the snapshot
+share.
 
 (iii) In folded mode the sign is consumed at emission, so the crossing
-information consists of the signed residues themselves; injectivity on
-sign components is the bijection of (i) restricted to fixed unsigned
-residues, and \eqref{eq:frame-lower} holds with the same fooling family
-presented in folded records.
+information consists of the signed residues $\pm1$ themselves, which are
+distinct for $Q\geq3$; the argument of (ii) applies verbatim to the
+folded records.
 \end{proof}
 
 \begin{corollary}[Physically realized lower bounds]
@@ -1396,25 +1556,35 @@ presented in folded records.
 For the streams of \cref{prop:physical-instantiation}(a)--(c) with the
 tuned modulus $Q_\epsilon$ of \cref{cor:w1-epsilon-cyclic}, the
 hypotheses of \cref{def:w1-dispersed-stream,def:w1-pass-accounting} are
-met, so \cref{thm:w1-one-pass-mask,thm:w1-unified-frontier} (and, for
-the two-round binary case, \cref{thm:main-tradeoff}) hold verbatim on
-the physical stream: any compiler positioned downstream of the schedule
-and of the twirl obeys
-$\overline A_p+(2p-1)S\geq(1-\delta)m\log_2K_\epsilon-h_2(\delta)$, and
-under tracked randomized compiling the crossing state contains the
-Pauli frame in the sense of \cref{prop:frame-cross-cut}(ii).
+met under the coefficient-freedom hypothesis of
+\cref{prop:physical-instantiation}, so
+\cref{thm:w1-one-pass-mask,thm:w1-unified-frontier} hold verbatim on the
+physical stream: for $0<\epsilon\leq1/8$, any compiler positioned
+downstream of the schedule and of the twirl that is correct within
+projective error $\epsilon$ with probability at least $1-\delta$,
+$\delta<1/2$, and makes at most $p$ forward passes obeys
+$\overline A_p+pS\geq(1-\delta)m\log_2K_\epsilon-h_2(\delta)
+-\lceil\log_2(p+1)\rceil$, and under tracked randomized compiling the
+frame bounds of \cref{prop:frame-cross-cut}(ii) hold as well.  For a
+coarse grid with $Q=3$, accuracy $\epsilon<1/2$, the subfamily with binary
+aggregates, two rounds, and $s\equiv+1$ is the masked-share stream, so the
+statements of \cref{thm:main-tradeoff} apply to single-delivery
+compilers that are correct on it.
 \end{corollary}
 
 \begin{proof}
-Immediate from
-\cref{prop:physical-instantiation,prop:frame-cross-cut}; no separate
-argument is required.
+The main bound is immediate from
+\cref{prop:physical-instantiation,prop:frame-cross-cut}(i).  For the
+$Q=3$ clause, restrict to binary aggregates, zero intermediate rounds,
+and $s\equiv+1$; the remaining streams are those of
+\cref{def:masked-share}, with the cut of \cref{def:cuts} before the last
+round.
 \end{proof}
 
-A single knob interpolates between the two regimes, and the
-interpolation is itself a theorem: the fraction of coordinates that
-reach the compiler in dispersed rather than pre-aggregated form trades
-off linearly against the compiler state that survives the cut.  We call
+A single knob interpolates between the two regimes: the fraction of
+coordinates that reach the compiler in dispersed rather than
+pre-aggregated form sets a lower bound on committed output plus crossing
+state that is linear in that fraction.  We call
 that fraction the \emph{dispersal fraction} $\eta$.  The name is
 deliberate: $\eta$ is not the twirl strength of randomized compiling
 (the probability with which a random Pauli is applied), and the proof
@@ -1426,31 +1596,49 @@ design rule.
 
 \begin{proposition}[Dispersal--memory Pareto bound]
 \label{prop:eta-pareto}
-Fix a dispersal fraction $\eta\in[0,1]$, $Q\geq3$, $K=Q-1$, and
-$0\leq\epsilon<\sin(\pi/(2Q))$.  Let each generator independently with
+Fix a dispersal fraction $\eta\in[0,1]$, $Q\geq3$, $2\leq K\leq Q$,
+$0\leq\epsilon<\sin(\pi/(2Q))$, and $0\leq\delta<1/2$.  Let each generator independently with
 probability $\eta$ enter the stream in dispersed twirled form (canonical
 sharing of \cref{prop:w1-stream-equivalence} with uniform signs), and
 otherwise in aggregate-exposed form.  Let $\mathcal A$ be correct within
 $\epsilon$ with probability at least $1-\delta$ on every valid stream
 and mask, making $p=p(m)$ forward passes in the charged model of
-\cref{def:w1-pass-accounting}.  Then, in expectation over the dispersal
-mask $T$,
+\cref{def:w1-pass-accounting}.  Write $\overline A_p(T)$ and $S(T)$ for
+the worst-input expected quantities of \cref{def:w1-pass-accounting}
+taken over the streams with dispersal mask $T$.  Then, in expectation over
+$T$,
 \begin{equation}\label{eq:eta-pareto}
- \mathbb E_T\bigl[\overline A_p+(2p-1)S\bigr]
- \geq(1-\delta)\,\eta m\log_2K-h_2(\delta).
+\begin{aligned}
+ &\mathbb E_T\bigl[\overline A_p(T)+pS(T)\bigr]\\
+ &\quad\geq(1-\delta)\,\eta m\log_2K-h_2(\delta)-\lceil\log_2(p+1)\rceil.
+\end{aligned}
 \end{equation}
-Under tracked presentation, each twirled generator additionally
-contributes its frame bit as in \cref{prop:frame-cross-cut}(ii).
+Under tracked presentation a compiler that keeps the pending signs
+separately pays for them in its crossing state
+(\cref{prop:frame-cross-cut}(ii)), but they do not add to this
+bound: the target depends on the signs only through the signed aggregate
+\eqref{eq:scheduled-aggregate}, so a deferred compiler may fold each
+pending sign into the residue it stores.  For a deterministic one-pass
+zero-error compiler and $K\in\{Q-1,Q\}$, \cref{thm:w1-one-pass-mask}
+applied to the
+dispersed coordinates strengthens \eqref{eq:eta-pareto} to
+$\mathbb E_T[A_1(T)+B_{\mathrm{cut}}(T)]\geq\eta m\log_2Q$, which is a
+bound on crossing state alone for a deferred compiler with $A_1=0$.
 \end{proposition}
 
 \begin{proof}
-Condition on the mask $T$.  Fixing the exposed coordinates and
-dispersing the coordinates in $T$ yields a subfamily satisfying the
-hypotheses of \cref{def:w1-dispersed-stream} with $|T|$ effective
-generators, so \cref{thm:w1-unified-frontier} applies verbatim and
-gives $\overline A_p+(2p-1)S\geq(1-\delta)|T|\log_2K-h_2(\delta)$ for
-every fixed $T$.  Take the expectation over the Bernoulli mask and use
-$\mathbb E|T|=\eta m$.
+Condition on the mask $T$.  Restrict the signs to $s\equiv+1$ and fix the
+exposed coordinates; $T$ and the exposed values are then public, known to
+both parties of the transcript argument, and are built into the
+transition function rather than stored as state.  The targets are the
+dispersed family on the $|T|$ generators in $T$ multiplied by one fixed
+unitary $W$ of the exposed coordinates.  The proof of
+\cref{thm:w1-unified-frontier} uses only pairwise separation of the
+targets, which this translation preserves, so it applies unchanged and
+gives
+$\overline A_p(T)+pS(T)\geq(1-\delta)|T|\log_2K-h_2(\delta)
+-\lceil\log_2(p+1)\rceil$ for every fixed $T$.  Take the expectation over
+the Bernoulli mask and use $\mathbb E|T|=\eta m$.
 \end{proof}
 
 \begin{figure*}[t]
@@ -1461,10 +1649,13 @@ masked-share device ($Q=3$, binary aggregates, tracked signs; every
 point restart-verified: the serialized snapshot alone plus the
 round-two suffix reproduces the exact output).  Left: a deferred
 compact-output compiler pays the dispersal in crossing state; measured
-slopes $10.3/21.1/43.3$ bytes per unit $\eta$ at $m=32/64/128$ sit on
-the zero-error floor $\eta m(\log_2 3+1)/8$ bytes (dashed; ratios
-$0.99$--$1.05$), the residue-plus-frame cost of
-\cref{thm:w1-one-pass-mask} and \cref{prop:frame-cross-cut}.  Right:
+slopes $10.3/21.1/43.3$ bytes per unit $\eta$ at $m=32/64/128$ match the
+storage cost of its serializer, one trit and one separately stored sign
+bit per dispersed generator, $\eta m(\log_2 3+1)/8$ bytes (dashed;
+ratios $0.99$--$1.05$).  This is not a lower bound: the proven
+zero-error one-pass floor is $\eta m\log_2 3/8$ bytes
+(\cref{prop:eta-pareto}), and the extra bit per generator is the sign,
+which a serializer folding it into the residue would not store.  Right:
 a streaming compiler pays the same dispersal in committed prefix output
 ($A_{\mathrm{pre}}$ slopes $60/129/260$ bytes per unit $\eta$, larger
 by the public addresses) while its crossing state stays flat at
@@ -1477,13 +1668,15 @@ $\leq8$ bytes.  The horizontal axis is the dispersal fraction $\eta$ of
 
 \Cref{fig:eta-sweep} measures \eqref{eq:eta-pareto} on the executable
 masked-share device: the two admissible payment channels of the bound
-appear as the two panels, the state channel sits on the predicted floor
-to within $5\%$, and the exchange between them is linear in the
-dispersal fraction with slope proportional to $m$.
+appear as the two panels, the state channel sits within $5\%$ of its
+serializer's storage cost, a factor $(\log_2 3+1)/\log_2 3\approx1.63$
+above the proven zero-error floor, and the exchange between them is
+linear in the dispersal fraction with slope proportional to $m$.
 
 The two panels also expose an asymmetry that the frontier itself does
-not predict.  Per dispersed generator the state channel costs about
-$2.6$ bits---the floor $\log_2 3+1=2.585$ of residue plus sign---while
+not predict.  Per dispersed generator the state channel of this serializer costs
+about $2.6$ bits---$\log_2 3+1=2.585$ for a residue and a separately
+stored sign, against a proven floor of $\log_2 3\approx1.585$---while
 the committed channel costs about $16$: an exchange rate near $6{:}1$
 between two currencies the frontier charges at par.  The next
 proposition isolates the part of that gap that is not an artifact of
@@ -1497,24 +1690,41 @@ state that converse alongside the bound.
 Let $c$ be the inter-round cut of a two-round partially dispersed stream
 as in \cref{prop:eta-pareto}.  Let $T\subseteq[m]$ be its dispersal mask:
 coordinates in $T$ carry two signed shares, whereas coordinates outside
-$T$ arrive in aggregate-exposed form.  Suppose the compiler has
+$T$ arrive in aggregate-exposed form.  We fix the record format: round one
+carries one addressed record per coordinate in $T$; round two carries one
+record per coordinate, a dispersed update for each coordinate in $T$, kept
+even when its residue is zero, and an aggregate-exposed record of a
+distinguishable type for each coordinate outside $T$.  A deferred
+compiler therefore learns $T$ from the round-two record types.  Suppose the compiler has
 irrevocably written the round-one content
 $W:=(a^{(1)}_j,s^{(1)}_j)_{j\in T}$ before $c$.  The commitment is
 \emph{executed} if the prefix $O_{\mathrm{pre}}$ is applied at $c$,
-before any round-two record is parsed; since the device must be told
-which generators to rotate and by how much, an executed prefix
-determines the pair $(T,W)$ on its own, without the suffix and without
-the cut snapshot.  The commitment is \emph{buffered} if
+before any round-two record is parsed.  We distinguish two readings of
+what an executed prefix must fix.  It is executed \emph{at record
+level} if it dispatches one addressed record per dispersed generator,
+as a control stack that forwards the compiler's records to the device
+does; such a prefix determines the pair $(T,W)$ on its own, without the
+suffix and without the cut snapshot.  This is a modelling assumption,
+not a consequence of applying a unitary.  It is executed \emph{at
+unitary level} if, on its own and for every value of the random seed, it
+is only required to implement, within $\epsilon$, the round-one action
+$U^{(1)}:=\prod_{j\in T}R_{P_j}\bigl(\Delta\,s^{(1)}_ja^{(1)}_j\bigr)$,
+which fixes the vector $y\in\mathbb Z_Q^m$ with
+$y_j=s^{(1)}_ja^{(1)}_j\bmod Q$ for $j\in T$ and $y_j=0$ otherwise, but
+neither $T$ nor $W$.  Unqualified, ``executed'' means record level.  The
+commitment is \emph{buffered} if
 $O_{\mathrm{pre}}$ is written and never rewritten, but is applied only
 after later records have been read, in which case it need not determine
-$(T,W)$.  Call $\mathcal A$ \emph{mask-uniform} if a single algorithm,
-with no serializer chosen as a function of $T$, is correct within
-$\epsilon$ on every valid partially dispersed stream for every mask.
+$(T,W)$.  Call $\mathcal A$ \emph{mask-uniform} if a single algorithm is
+correct within $\epsilon$ on every valid partially dispersed stream for
+every mask, its committed prefixes over all masks form one prefix-free
+set, and the action of a prefix is a function of the prefix alone, not of
+$T$.
 \end{definition}
 
-\begin{proposition}[Commitment toll: a characterization]
+\begin{proposition}[Commitment toll under executed commitment]
 \label{prop:commitment-toll}
-Fix $Q\geq3$, $K=Q-1$, $\epsilon<\sin(\pi/(2Q))$, $r=2$, and
+Fix $Q\geq3$, $\epsilon<\sin(\pi/(2Q))$, $r=2$, and
 $1\leq k\leq m$.  Let $\mathcal A$ be mask-uniform and correct within
 $\epsilon$ on every valid two-round partially dispersed stream described
 in \cref{def:self-identifying}, with a prefix-free committed serializer.
@@ -1523,40 +1733,47 @@ $\binom{m}{k}$ subsets of size $k$, and the committed content $W$
 uniformly on $\mathbb Z_Q^k\times\{\pm1\}^k$ independently of $T$.
 \begin{enumerate}[label=(\roman*),leftmargin=1.6em]
 \item \emph{(Executed commitment pays the mask entropy.)}  If
-$\mathcal A$ commits in executed form at the inter-round cut, then
+$\mathcal A$ commits in record-level executed form at the inter-round
+cut, then
 \begin{equation}\label{eq:commitment-toll}
  \mathbb E_{T,W}\bigl[A_{\mathrm{pre}}\bigr]
  \;\geq\;\underbrace{k\log_2(2Q)}_{\text{payload}}
  \;+\;\underbrace{\log_2\tbinom{m}{k}}_{\text{toll}},
 \end{equation}
 and \emph{a fortiori} $\max_{T,W}A_{\mathrm{pre}}$ obeys the same
-bound.  A deferred compiler attains $A_{\mathrm{pre}}=0$ with
-$S\leq k\log_2(2Q)+O(\log m)$, so the identical content crosses the cut
-for $\log_2\binom{m}{k}$ fewer bits in the state channel.  That
-difference is the toll.
-\item \emph{(Buffered commitment pays none of it.)}  The hypothesis in
-(i) cannot be removed.  The mask-deferred compiler that writes $W$
-irrevocably in positional order and recovers $T$ from the round-two
-records is admissible in \cref{def:compiler} and correct, commits in
-buffered form, and satisfies
+bound.  A deferred compiler, holding $W$ as one packed integer in
+$\mathsf{ser}_{\mathrm{store}}$, attains $A_{\mathrm{pre}}=0$ with
+crossing state $S\leq k\log_2(2Q)+O(\log m)$
+(\cref{def:w1-pass-accounting}), so the identical content crosses the cut
+for at least $\log_2\binom{m}{k}-O(\log m)$ fewer bits in the state
+channel.  That difference is the toll.
+\item \emph{(Buffered commitment pays none of it.)}  For $k=\Theta(m)$
+with $k\leq m-\Omega(m)$, where $\log_2\binom{m}{k}=\Theta(m)$ exceeds
+the $O(\log m)$ header, the hypothesis in (i) cannot be removed.  The
+mask-deferred compiler that writes $W$ irrevocably in positional order and
+recovers $T$ from the round-two records is admissible in
+\cref{def:compiler}, which requires only that the final output be
+write-once, and is correct; it commits in buffered form, and satisfies
 $\mathbb E_{T,W}[A_{\mathrm{pre}}]\leq k\log_2(2Q)+O(\log m)$: it pays
 the payload and the header and no mask entropy whatever.
 \end{enumerate}
 The toll is therefore a property of \emph{executed} commitment, not of
-commitment as such.  Where it is paid it equals the entropy of the
-dispersal mask and is bounded by $h_2(k/m)\big/(k/m)$ bits per
-committed generator.  A fixed public mask has zero entropy; within the
+commitment as such.  Where it is paid it is at least the entropy of the
+dispersal mask, up to the $O(\log m)$ header, which is at most
+$h_2(k/m)\big/(k/m)$ bits per committed generator.  Among prefixes that
+determine $(T,W)$, an enumerative code of the mask attains the bound up to
+$O(\log m)$; with one self-delimiting addressed record per generator the
+overhead is $O(k)$.  A fixed public mask has zero entropy; within the
 uniform size-$k$ ensemble above, the toll therefore vanishes at $k=m$
 (and trivially at $k=0$, which the proposition excludes).
 \end{proposition}
 
 \begin{proof}
-(i) By \cref{def:self-identifying} an executed prefix determines
-$(T,W)$, so $H(O_{\mathrm{pre}})\geq H(T,W)$.  Mask uniformity forbids
-a serializer selected after $T$ is known, so the committed prefixes
-form one prefix-free code over the joint source $(T,W)$, and the
-expected length of a prefix-free code is at least the entropy of its
-source; hence
+(i) By \cref{def:self-identifying} a record-level executed prefix
+determines $(T,W)$, so $H(O_{\mathrm{pre}})\geq H(T,W)$.  By mask
+uniformity the committed prefixes form one prefix-free code over the
+joint source $(T,W)$, and the expected length of a prefix-free code is at
+least the entropy of its source; hence
 $\mathbb E[A_{\mathrm{pre}}]=\mathbb E|O_{\mathrm{pre}}|\geq H(T,W)$.
 By construction, $T$ and $W$ are independent and uniform, so
 $H(T,W)=\log_2\binom{m}{k}+k\log_2(2Q)$, which is
@@ -1565,7 +1782,12 @@ deferred compiler the round-major order is public, so its snapshot holds
 the $k$ residues and signs in positional order while the round-two record
 types distinguish dispersed updates from aggregate-exposed coordinates
 and thereby disclose the mask at no charge;
-the $O(\log m)$ term is the header.
+$W$ is held as one packed integer of $\lceil k\log_2(2Q)\rceil$ bits in
+$\mathsf{ser}_{\mathrm{store}}$, and the $O(\log m)$ term is the header.
+Ranking $T$ among the $\binom mk$ masks gives a prefix of length
+$\lceil\log_2\binom mk\rceil+\lceil k\log_2(2Q)\rceil+O(\log m)$ that
+determines $(T,W)$, which shows the bound is tight up to the header in that
+class.
 
 (ii) The mask-deferred compiler never rewrites an emitted record, so it
 meets \cref{def:compiler}, and it is correct because the round-two
@@ -1582,7 +1804,7 @@ giving up the ability to apply what it has written.
 \label{rem:self-id-scope}
 Three limits of the statement are worth naming.  First,
 \cref{def:self-identifying} is an assumption about the compiler and not
-a consequence of \cref{def:compiler}: append-only first exposure fixes
+a consequence of \cref{def:compiler}: write-once output fixes
 the \emph{semantics} of an emitted record---it is never
 reinterpreted---but does not require the record to name its own
 targets, and clause (ii) is precisely a compiler that exploits the
@@ -1592,48 +1814,143 @@ before the suffix is parsed.  Second, the bound is on an ensemble.  For
 a single mask fixed in advance and known to the serializer there is
 nothing to pay, and the $\log_2\binom{m}{k}$ term is then not merely
 unprovable but false; mask uniformity is what makes the schedule a
-source rather than a constant.  Third, the payload term is charged
-against the declared record content $(a^{(1)},s^{(1)})$ and not against
-the round-one unitary, which determines strictly less: a coordinate
-carrying residue $0$ acts as identity and is invisible, and
-$(s,a)$ and $(-s,-a\bmod Q)$ induce the same rotation, so the applied
-unitary alone fixes $(T,W)$ only up to those two degeneracies.  Both
-are degeneracies of the payload; neither touches the
-$\log_2\binom{m}{k}$ toll, which is precisely the quantity isolated by clause (ii)
-and \cref{fig:commit-toll} measures.
+source rather than a constant.  Third, both the payload and the toll are charged against the declared
+record content $(a^{(1)},s^{(1)})$, not against the round-one unitary,
+which determines strictly less: a coordinate whose signed residue
+$s^{(1)}_ja^{(1)}_j$ is $0$ acts as identity and is invisible, and
+$(s,a)$ and $(-s,-a\bmod Q)$ induce the same rotation.  The sign
+degeneracy affects only the payload.  The zero-residue degeneracy
+affects the toll as well, because an invisible coordinate hides its
+membership in $T$: at unitary level the toll is smaller, and
+\cref{cor:unitary-toll} bounds it from below.  Clause (i) and
+\cref{fig:commit-toll} concern record-level commitment.
 \end{remark}
 
+\begin{corollary}[The toll at unitary level]
+\label{cor:unitary-toll}
+Under the hypotheses of \cref{prop:commitment-toll}, suppose $\mathcal A$
+commits in unitary-level executed form (\cref{def:self-identifying}).
+Let $\nu\sim\mathrm{Bin}(k,1-1/Q)$ be the number of dispersed
+coordinates whose signed first-round residue is nonzero.  Then
+\begin{equation}\label{eq:unitary-toll}
+\begin{aligned}
+ \mathbb E_{T,W}\bigl[A_{\mathrm{pre}}\bigr]
+ &\geq H(y)\\
+ &=\log_2\tbinom{m}{k}+k\log_2Q
+ -\mathbb E\Bigl[\log_2\tbinom{m-\nu}{k-\nu}\Bigr],
+\end{aligned}
+\end{equation}
+while a deferred compiler that folds each sign into its stored residue
+attains $A_{\mathrm{pre}}=0$ with $S\leq k\log_2Q+O(\log m)$, holding the
+folded residues as one packed integer.  The unitary-level toll is
+therefore at least
+\begin{equation}\label{eq:unitary-toll-gap}
+ \tau_Q(m,k):=\log_2\tbinom{m}{k}
+ -\mathbb E\Bigl[\log_2\tbinom{m-\nu}{k-\nu}\Bigr]-O(\log m),
+\end{equation}
+and per committed generator, with $\eta=k/m$ fixed and $m\to\infty$,
+\begin{equation}\label{eq:unitary-toll-rate}
+ \frac{\tau_Q(m,k)}{k}\;\to\;
+ \frac{h_2\bigl(\eta(1-1/Q)\bigr)}{\eta}-h_2(1/Q).
+\end{equation}
+The rate is attained: an executed prefix that writes $\nu$, the rank of
+$\operatorname{supp}y$ among the $\nu$-subsets of $[m]$, and the nonzero
+values of $y$ packed in base $Q-1$ has
+$\mathbb E[A_{\mathrm{pre}}]\leq H(y)+O(\log m)$.  This rate is positive for
+$0<\eta<1$, vanishes at $\eta=1$, increases to the record-level rate
+$h_2(\eta)/\eta$ as $Q\to\infty$, and equals $0.918$ bits at $Q=3$,
+$\eta=\tfrac12$, against $2$ bits at record level.
+\end{corollary}
+
+\begin{proof}
+For $j\in T$ the signed residue $c_j:=s^{(1)}_ja^{(1)}_j\bmod Q$ is
+uniform on $\mathbb Z_Q$, because $a^{(1)}_j$ is uniform and independent
+of $s^{(1)}_j$; so $(T,c)$ is uniform on $\binom{[m]}{k}\times\mathbb Z_Q^k$.
+If $y\neq y'$, the corresponding round-one actions differ by a nonzero
+multiple of $\Delta=2\pi/Q$ on some generator, and
+\cref{thm:w1-exact-separation} with the full residue alphabet $K=Q$
+separates them by $2\sin(\pi/(2Q))>2\epsilon$; integer and modular
+residues give the same rotations up to a global phase $\pm1$.  No prefix is within $\epsilon$ of both, so
+an executed prefix determines $y$, and mask uniformity makes the
+prefixes one prefix-free code; source coding gives
+$\mathbb E[A_{\mathrm{pre}}]\geq H(y)$.  The map $(T,c)\mapsto(y,T)$ is
+injective, so $H(y)=H(T,c)-H(T\mid y)$.  Given $y$ with support of
+size $\sigma$, the consistent masks are the $k$-sets containing the
+support, all equally likely, so
+$H(T\mid y)=\mathbb E\log_2\binom{m-\nu}{k-\nu}$ with
+$\nu=|\operatorname{supp}y|\sim\mathrm{Bin}(k,1-1/Q)$; this is
+\eqref{eq:unitary-toll}.  Equivalently, writing $V:=\operatorname{supp}y$,
+the values of $y$ on $V$ are uniform on $(\mathbb Z_Q\setminus\{0\})^V$ and
+independent of $T$ given $V$, so $H(T\mid y)=H(T\mid V)$ and the excess of
+$H(y)$ over $k\log_2Q$ is $H(T)-H(T\mid V)=I(T;V)$.  The deferred compiler stores the $k$ signed
+residues in the public round-major order and recovers $T$ from the
+round-two record types, as in \cref{prop:commitment-toll}(i); the target
+depends on the signs only through the signed aggregate
+\eqref{eq:scheduled-aggregate}, so the folded residues suffice.
+Subtracting gives \eqref{eq:unitary-toll-gap}.  For
+\eqref{eq:unitary-toll-rate}, use $I(T;V)=H(V)-H(V\mid T)$.  Given $T$,
+each member of $T$ lies in $V$ independently with probability $1-1/Q$,
+so $H(V\mid T)=k\,h_2(1/Q)$.  Each $j\in[m]$ lies in $V$ with
+probability $\eta(1-1/Q)$, so subadditivity gives
+$H(V)\leq m\,h_2(\eta(1-1/Q))$.  Conversely $V$ is a uniformly random
+subset of $[m]$ given its size $\nu\sim\mathrm{Bin}(k,1-1/Q)$, so
+$H(V)\geq\mathbb E\log_2\binom{m}{\nu}$.  The bound
+$\log_2\binom ms\geq m\,h_2(s/m)-\log_2(m+1)$, a second-order expansion
+of $h_2$ around $\eta(1-1/Q)$, which lies in $(0,1)$, and a Chernoff tail
+bound for $\nu$ give $H(V)\geq m\,h_2(\eta(1-1/Q))-O(\log m)$.  Dividing by
+$k=\eta m$ gives the limit, approached from below.  For attainability,
+given $\nu$ the support is uniform over the $\nu$-subsets of $[m]$ and the
+nonzero values are uniform on $(\mathbb Z_Q\setminus\{0\})^\nu$, so the
+stated prefix has expected length
+$H(y)-H(\nu)+O(\log m)\leq H(y)+O(\log m)$, and it implements the round-one
+action on its own.  Strict concavity of
+$h_2$ with $h_2(0)=0$ gives $h_2(\eta u)>\eta h_2(u)$ for $0<\eta<1$ and
+$u=1-1/Q$, which is positivity, since $h_2(u)=h_2(1/Q)$.  The derivative
+in $u$ is $h_2'(\eta u)-h_2'(u)>0$ because $h_2'$ is decreasing, so the
+rate increases with $Q$, to $h_2(\eta)/\eta$ as $u\to1$.
+\end{proof}
+
 The two channels are therefore \emph{not} at par once commitment is
-executed rather than buffered: applying what one has written requires
-the prefix to identify the dispersal mask, while deferring---or merely
+executed rather than buffered: a record-level executed prefix must
+identify the dispersal mask, and even a unitary-level one must identify
+the part of it that its nonzero rotations reveal, while deferring---or merely
 buffering---obtains that same mask from the stream that follows.  Because
-$\log_2\binom{m}{k}/k\to h_2(\eta)/\eta$, the toll,
+$\log_2\binom{m}{k}/k\to h_2(\eta)/\eta$, the record-level toll,
 where it is paid at all, is bounded by a constant---about $2$ bits per
 generator at $\eta=\tfrac12$ and $0$ at $\eta=1$---and does not grow
-with $m$.
+with $m$.  The unitary-level toll of \cref{cor:unitary-toll} is a lower
+bound measured against a deferred compiler that folds the signs, whereas
+the record-level toll is measured against one that stores them; at
+$\eta=\tfrac12$ that lower bound is asymptotically $0.918$ bits at $Q=3$
+and $1.99$ bits on the $\epsilon=10^{-3}$ grid ($Q_\epsilon=785$).
 
-\Cref{fig:commit-toll} tests both clauses on the same device under a
-preregistered protocol frozen before the run
+\Cref{fig:commit-toll} instantiates both clauses on the same device
+under a preregistered protocol frozen before the run
 (\path{PaperDraft/research/E8_preregistration.md}), with every cell
-restart-verified.  Four serializers are compared at
+restart-verified.  Three encoders are compared at
 $m\in\{128,512,2048\}$ (and $m$ up to $32768$ for two of them): the
 deferred snapshot, the address-per-record serializer of
-\cref{fig:eta-sweep}, an identity-optimal executed prefix that ranks
-the mask combinadically, and---instantiating
-\cref{prop:commitment-toll}(ii)---a mask-deferred control whose prefix
-omits the mask and recovers it from the suffix.  Against clause (i),
-the measured toll matches $\log_2\binom{m}{k}/k$ within $0.17$ bits at
-the worst cell and within $0.02$ bits typically; it is flat in $m$ at
-fixed $\eta$ ($2.11/1.99/1.97$ bits at $\eta=\tfrac12$ across a
-$16\times$ range of $m$); and it is exactly zero at $\eta=1$.  Against
-clause (ii), it is exactly zero at every $\eta$ in the mask-deferred
-control.  The control is the informative arm: it pays the same payload
-into the same write-once output and rewrites nothing, so what separates
-it from the executed encoder is not irreversibility and not addressing
-but whether the prefix can be applied before the suffix is read.  The
-experiment therefore measures where the class boundary of
-\cref{def:self-identifying} lies, rather than confirming a toll that
-commitment alone would impose.
+\cref{fig:eta-sweep}, and an identity-optimal executed prefix that ranks
+the mask combinadically.  The buffered control of
+\cref{prop:commitment-toll}(ii), whose prefix omits the mask and
+recovers it from the suffix, is the deferred snapshot written to the
+output, so it has no separate encoder.  These runs are constructive checks
+of a source-coding bound, not tests that could have failed: the executed
+encoder's body has $\lceil\log_2(\binom mk(2Q)^k)\rceil$ bits by
+construction, so its excess over the deferred snapshot is
+$\log_2\binom{m}{k}/k$ up to rounding, and the control's excess is zero by
+identity.  What the runs establish is that both encoders are correct and
+restartable, so the bound of clause (i) is attained and buffering removes
+it.  The measured excess matches $\log_2\binom{m}{k}/k$ within $0.06$ bits
+over the preregistered analysis cells ($\bar k\geq16$; $0.17$ bits in the
+one excluded cell, $m=128$, $\eta=\tfrac18$) and within $0.02$ bits
+typically; it is flat in $m$ at fixed $\eta$ ($2.11/1.99/1.97$ bits at
+$\eta=\tfrac12$ across a $16\times$ range of $m$); and it is exactly zero
+at $\eta=1$.  The comparison that matters is conceptual: the control pays
+the same payload into the same write-once output and rewrites nothing,
+so what separates it from the executed encoder is not irreversibility
+and not addressing but whether the prefix can be applied before the
+suffix is read.
 
 This also explains the $6{:}1$ ratio in \cref{fig:eta-sweep}.  Under
 the identity-optimal serializer the ratio is $1.00$ at $\eta=1$ and at
@@ -1662,24 +1979,31 @@ length---and on \textsc{tket} the excess reaches $86\%$ of
 $\log_2\binom{m}{k}$ at $k=m/2$, comfortably above the seed noise.  But
 the excess peaks at $k=m/4$ rather than $k=m/2$, and on Qiskit it is
 $8\%$ of prediction and smaller than the seed-to-seed noise.  Under the
-frozen rule this is a failure, and we make no third-party claim: a
-general-purpose compressor applied to a $100$\,kB instruction text is
-evidently not a sharp enough entropy estimator for a few hundred bytes
-of schedule information.  \Cref{prop:commitment-toll} rests on the
-instrumented device of \cref{fig:commit-toll} alone, where every cell is
-restart-verified; whether the toll is measurable at a third-party API
-boundary remains open.
+frozen rule this is a failure, and we make no third-party claim.  Two
+causes are possible and the run does not separate them: a general-purpose
+compressor applied to a $100$\,kB instruction text may be too coarse an
+entropy estimator for a few hundred bytes of schedule information, and
+neither tool emits a round-major committed stream (Qiskit's OpenQASM~3
+output is ordered by qubit, and TKET's lists the full first layer before
+the dispersed addresses), so the design premise that the output is a
+committed prefix was not met.  The record-level toll of
+\cref{prop:commitment-toll} rests on the source-coding argument and on the
+instrumented device of \cref{fig:commit-toll}; whether it is measurable
+at a third-party API boundary remains open.
 
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.78\textwidth]{figures/commit_toll.pdf}
-\caption{The commitment toll, preregistered and measured on the
-two-round masked-share device; every cell restart-verified.  Left:
+\caption{The record-level commitment toll attained on the two-round
+masked-share device under a preregistered protocol; every cell
+restart-verified.  This is a constructive check, not a test: the
+executed encoder attains the source-coding bound by construction.  Left:
 bits per committed generator paid by an executed committed
-prefix in excess of the deferred snapshot, against the predicted
+prefix in excess of the deferred snapshot, against the
 mask entropy $\log_2\binom{m}{k}/k$ (dashed).  The toll is flat in
 $m$ and vanishes at $\eta=1$; for the buffered mask-deferred control of
-\cref{prop:commitment-toll}(ii) it is zero at every $\eta$.  Right: the per-generator exchange rate
+\cref{prop:commitment-toll}(ii), whose prefix is the deferred snapshot,
+it is zero at every $\eta$ by identity.  Right: the per-generator exchange rate
 between the committed and state channels.  Solid: irreducible, under
 an identity-optimal serializer---at most $2.64$, and exactly $1$ when
 the dispersal mask is public.  Dotted: the same rate as actually
@@ -1696,7 +2020,7 @@ grows with address width.  Frozen artifact:
 \label{sec:reduction}
 
 We prove two lower bounds using one-way message arguments~\cite{kushilevitz1997communication}.
-The first uses the $K_\epsilon^m$-point no-wrap packing and Fano's inequality
+The first uses the $\bar K_\epsilon^m$-point no-wrap packing and Fano's inequality
 to obtain an explicit accuracy--description tradeoff, including randomized
 compilers.  The second injects the $3^m$ possible first-round masks into the
 message crossing the inter-round cut.  Its deterministic zero-error bound is
@@ -1707,8 +2031,9 @@ covers randomized failure probability $\delta$.
 
 \begin{lemma}[Nearest-packing decoder]
 \label{lem:nearest-decoder}
-Let $\mathcal F=\{U_x:x\in\mathcal X\}$ have pairwise distance at least
-$4\epsilon$.  From any output circuit $C$, define
+Let $\epsilon>0$ and let $\mathcal F=\{U_x:x\in\mathcal X\}$ have
+pairwise distance at least $4\epsilon$.  From any output circuit $C$,
+define
 \begin{equation*}
  \widehat x(C)\in\arg\min_{y\in\mathcal X}
        d_{\mathrm{proj}}(U(C),U_y),
@@ -1752,8 +2077,9 @@ Taking the infimum preserves the inequality.
 For each $i \in [m]$ and any circuit $C$, define
 \begin{equation}\label{eq:decoder}
 \delta_i(C) :=
-\arg\min_{b \in \{0,1\}}\ \min_{y:\, y_i = b} d_{\mathrm{proj}}(U(C), U_y).
+\arg\min_{b \in \{0,1\}}\ \min_{y:\, y_i = b} d_{\mathrm{proj}}(U(C), U_y),
 \end{equation}
+with ties broken toward $0$, so that $\delta_i$ is a function of $C$.
 (Bob's local computation is unbounded, so he may exhaustively search the
 $2^{m-1}$ candidates of each class.) If
 $d_{\mathrm{proj}}(U(C_x), U_x) \leq \epsilon < \epsilon_0$, then
@@ -1775,7 +2101,7 @@ minimum, i.e.\ $\delta_i(C_x) = x_i$.
 \begin{theorem}[Randomized $\epsilon$--description tradeoff]
 \label{thm:output-counting}
 Let $0<\epsilon\leq1/8$, let $\mathcal F_{m,\epsilon}$ be the
-$K_\epsilon$-ary family of \cref{prop:epsilon-packing}, and let a possibly
+$\bar K_\epsilon$-ary family of \cref{prop:epsilon-packing}, and let a possibly
 randomized compiler $\mathcal A$ output $C_{x,\rho}$ satisfying, for every
 $x$,
 \begin{equation}\label{eq:random-success}
@@ -1793,9 +2119,9 @@ code separately obeys
 \begin{aligned}
  \max_x\mathbb E_\rho
  B_{\mathrm{rel}}(C_{x,\rho}\mid\mathcal F_{m,\epsilon})
- &\geq(1-\delta)m\log_2K_\epsilon-h_2(\delta),\\
+ &\geq(1-\delta)m\log_2\bar K_\epsilon-h_2(\delta),\\
  \max_x\mathbb E_\rho B_{\mathrm{self}}(C_{x,\rho})
- &\geq(1-\delta)m\log_2K_\epsilon-h_2(\delta).
+ &\geq(1-\delta)m\log_2\bar K_\epsilon-h_2(\delta).
 \end{aligned}
 \end{equation}
 In particular, for fixed $\delta<1/2$ both are
@@ -1805,26 +2131,26 @@ At $\delta=0$, the family-relative bound is tight to lower-order framing
 terms: a deterministic semantic compiler uses
 \begin{equation}\label{eq:relative-epsilon-upper}
  B_{\mathrm{rel}}(C_x\mid\mathcal F_{m,\epsilon})
- \leq\lceil m\log_2K_\epsilon\rceil
-       +O(\log m+\log K_\epsilon).
+ \leq\lceil m\log_2\bar K_\epsilon\rceil
+       +O(\log m+\log \bar K_\epsilon).
 \end{equation}
 Separately, for $P_j=Z_j$ and $RZ\in B$, the explicit self-contained
 circuit satisfies
-$B_{\mathrm{self}}(C_x)=O(m(\log m+\log K_\epsilon))$ and $G(C_x)\leq m$;
+$B_{\mathrm{self}}(C_x)=O(m(\log m+\log \bar K_\epsilon))$ and $G(C_x)\leq m$;
 no self-contained-bit or gate-count tightness claim is made.
 \end{theorem}
 
 \begin{proof}
-Let $X$ be uniform on $[K_\epsilon]_0^m$ and let $C=C_{X,\rho}$.
+Let $X$ be uniform on $[\bar K_\epsilon]_0^m$ and let $C=C_{X,\rho}$.
 By \eqref{eq:epsilon-separation}, the nearest-packing decoder of
 \cref{lem:nearest-decoder} has error probability at most $\delta$.  Fano's
 inequality gives
 \begin{equation*}
  H(X\mid C)\leq h_2(\delta)
-       +\delta\log_2(K_\epsilon^m-1),
+       +\delta\log_2(\bar K_\epsilon^m-1),
 \end{equation*}
 and hence
-$I(X;C)\geq(1-\delta)m\log_2K_\epsilon-h_2(\delta)$.
+$I(X;C)\geq(1-\delta)m\log_2\bar K_\epsilon-h_2(\delta)$.
 For either prefix-free code $E$, source coding gives
 $\mathbb E|E(C)|\geq H(C)\geq I(X;C)$.  The maximum conditional expected
 length over $x$ is at least this uniform average, proving each line of
@@ -1833,11 +2159,11 @@ distribution, so random access, dynamic passes, and internal IR do not
 weaken it.
 
 For \eqref{eq:relative-epsilon-upper}, the public dictionary supplies
-$(P_1,\ldots,P_m,K_\epsilon,\Delta_\epsilon,B)$ and aggregate mode packs
-the base-$K_\epsilon$ vector into one fixed-length integer block.  Its
-header serializes $m,K_\epsilon$, the mode, and the block boundary.  In the
+$(P_1,\ldots,P_m,\bar K_\epsilon,\bar\Delta_\epsilon,B)$ and aggregate mode packs
+the base-$\bar K_\epsilon$ vector into one fixed-length integer block.  Its
+header serializes $m,\bar K_\epsilon$, the mode, and the block boundary.  In the
 canonical self-contained construction, each nonzero $Z_j$ term has an
-$O(\log m)$ address and an $O(\log K_\epsilon)$ rational-$\pi$ parameter
+$O(\log m)$ address and an $O(\log \bar K_\epsilon)$ rational-$\pi$ parameter
 under \eqref{eq:precision-charge}; there are at most $m$ terms.
 \end{proof}
 
@@ -1866,7 +2192,7 @@ $K^m2^{-\max_x\ell_x}\leq1$, proving the two rounded bounds.
 \begin{remark}[What the counting bound does and does not say]
 \label{rem:pass-through}
 \Cref{eq:output-counting} holds regardless of internal resources, but the
-two inequalities must not be cross-compared.  The packed $K_\epsilon$-ary
+two inequalities must not be cross-compared.  The packed $\bar K_\epsilon$-ary
 block in \eqref{eq:relative-epsilon-upper} is an upper bound only for
 $B_{\mathrm{rel}}(\cdot\mid\mathcal F_{m,\epsilon})$; it is not a
 self-contained target-basis circuit string.  Likewise $G(C)$ is never
@@ -1916,9 +2242,11 @@ $\max_u\mathbb E_\rho[B_{\mathrm{cut}}(c_{\mathrm{MS}}(u,\rho))]$.
 \begin{theorem}[Representation-dependent masked-share tradeoff]
 \label{thm:main-tradeoff}
 Let the sharing modulus be $K_{\mathrm{share}}=3$, let $\alpha=2\pi/3$, and
-$\epsilon_0=\sin(\pi/6)=1/2$.  Suppose first that a deterministic compiler
-$\mathcal A$ is correct for \emph{every} valid two-round decomposition in
-\cref{def:masked-share}:
+$\epsilon_0=\sin(\pi/6)=1/2$.  Let $\mathcal A$ receive the stream once:
+the source delivers it in a single forward pass, while internal rescans of
+any retained data are allowed and charged in $B_{\mathrm{cut}}$.  Suppose
+first that $\mathcal A$ is deterministic and correct for \emph{every} valid
+two-round decomposition in \cref{def:masked-share}:
 \begin{equation*}
 \begin{gathered}
  d_{\mathrm{proj}}(U(C(u,v)),U_{u+v\bmod 3})
@@ -1933,7 +2261,7 @@ Then, under the single family-relative output code of
  +B_{\mathrm{cut}}^{\mathrm{MS}}(\mathcal A,m)
  \geq \left\lceil m\log_2 3\right\rceil.
 \end{equation}
-Consequently, if the final output is family-relative compact,
+Moreover, if the final output is family-relative compact,
 \begin{equation*}
  B_{\mathrm{rel}}^{\mathrm{out}}(\mathcal A,m\mid\mathcal F_m)
  \leq m+c\log_2(m+2),
@@ -1942,18 +2270,18 @@ then
 \begin{equation}\label{eq:compact-cut-floor}
  B_{\mathrm{cut}}^{\mathrm{MS}}(\mathcal A,m)
  \geq \left\lceil m\log_2 3\right\rceil
-       -m-c\log_2(m+2)=\Omega(m).
+       -c\log_2(m+2).
 \end{equation}
 In contrast, a one-pass compiler receiving the semantic aggregate vector
 $x$ streams the same aggregate-mode code with
 $B_{\mathrm{rel}}^{\mathrm{out}}=m+O(\log m)$ and
 $B_{\mathrm{cut}}=O(\log m)$.
 
-More generally, let $0\leq\delta<1/2$ and let $\mathcal A$ be randomized
-and satisfy the displayed
+More generally, let $0\leq\delta<1/2$ and let $\mathcal A$ be randomized,
+receive the stream once, and satisfy the displayed
 accuracy condition on every valid $(u,v)$ with probability at least
-$1-\delta$.  It may use arbitrary random access and a dynamic
-$p=p(m,u,v,\rho)$.  Then
+$1-\delta$.  It may use arbitrary random access and any number of
+internal rescans of retained data.  Then
 \begin{equation}\label{eq:randomized-main-tradeoff}
  \overline B_{\mathrm{pre}}^{\mathrm{rel}}
  +\overline B_{\mathrm{cut}}^{\mathrm{MS}}
@@ -1962,7 +2290,11 @@ $p=p(m,u,v,\rho)$.  Then
 In particular, for a deferred aggregate-mode compiler with
 $\overline B_{\mathrm{pre}}^{\mathrm{rel}}=O(\log m)$ and fixed
 $\delta<1/2$, the flat representation still requires
-$\overline B_{\mathrm{cut}}^{\mathrm{MS}}=\Omega(m)$.
+$\overline B_{\mathrm{cut}}^{\mathrm{MS}}=\Omega(m)$.  A compiler to
+which the source re-delivers the stream is covered instead by
+\cref{thm:w1-unified-frontier} with $Q=3$ and $K=2$, which bounds
+$\overline A_p+\overline\Sigma^{\to}_p$; a single cut does not suffice
+there, because a later pass can reread the first round.
 \end{theorem}
 
 \begin{proof}
@@ -1993,11 +2325,19 @@ field gives the length of the committed prefix that follows, so the complete
 messages are prefix-free.  Kraft's inequality therefore gives maximum
 message length at least $\lceil m\log_2 3\rceil$.  The sum of the two
 separate worst-case field lengths is at least that maximum, which proves
-\eqref{eq:main-tradeoff}.  Prefix monotonicity and the assumed
-upper bound on the final output give \eqref{eq:compact-cut-floor}.
+\eqref{eq:main-tradeoff}.  For \eqref{eq:compact-cut-floor}, fix $u$.  Each coordinate admits two
+continuations $v_j$ with $u_j+v_j\in\{0,1\}$, so the $2^m$ continuations
+reach every binary aggregate, and correct final outputs for distinct
+aggregates are distinct.  These $2^m$ codewords of the prefix-free output
+code all extend the committed prefix, of length $\ell_{\mathrm{pre}}(u)$, and
+have
+length at most $m+c\log_2(m+2)$, so Kraft's inequality applied to their
+suffixes gives $\ell_{\mathrm{pre}}(u)\leq c\log_2(m+2)$.  Substituting in
+\eqref{eq:main-tradeoff} gives \eqref{eq:compact-cut-floor}.
 
 For the semantic upper bound, the compiler writes the aggregate-mode header,
-copies the arriving bits $x_j$ into the support-mask field, and retains only
+copies the arriving bits $x_j$ into the aggregate field (base two, so the
+blocks are exact), and retains only
 a self-delimiting index and finite control.  It stores no coefficient table
 or intermediate graph.  The sparse parameter payload is fixed and the live
 address/index costs $O(\log m)$, so every cut has
@@ -2019,8 +2359,10 @@ Fano therefore gives
 The two message fields are self-delimiting, so source coding lower-bounds
 their expected total length by this conditional information, yielding
 \eqref{eq:randomized-main-tradeoff}.  This is a conditional-Fano
-(equivalently, distributional/Yao) argument and does not impose a fixed pass
-count or sequential internal memory.
+(equivalently, distributional/Yao) argument; it allows internal rescans of
+retained data and does not assume sequential internal memory, but it uses
+that Bob's continuation reads only $V$, which is why the stream must be
+delivered once.
 \end{proof}
 
 \begin{proposition}[Memory-capped hybrid compilers]
@@ -2043,8 +2385,10 @@ does not assert a matching curve for $B_{\mathrm{self}}$ or $G$.
 
 \begin{proof}
 The ordered-share header records $h$.  During round one the compiler packs
-$u_1,\ldots,u_h$ into a base-three RAM block and immediately commits
-$u_{h+1},\ldots,u_m$ in their public generator order.  It needs only the
+$u_1,\ldots,u_h$ into a base-three integer held in
+$\mathsf{ser}_{\mathrm{store}}$ (\cref{def:compiler}) and commits
+$u_{h+1},\ldots,u_m$ in their public generator order, packed in base three
+and flushed by the end of round one, before the cut.  It needs only the
 packed block, an index, and framing state at the cut.  During round two it
 emits the aggregates $u_j+v_j\pmod3$ for $j\leq h$ and the separate residues
 $v_j$ for $j>h$.  The latter combine with the already emitted first shares;
@@ -2056,22 +2400,24 @@ mode declares its public schedule and split in its header.
 
 \begin{corollary}[Compactness versus flat-share recovery]
 \label{cor:output-inflation}
-On the masked-share representation, any compiler with
-$B_{\mathrm{cut}}^{\mathrm{MS}}=o(m)$ must have
+On the masked-share representation, any deterministic compiler that
+receives the stream once and has $B_{\mathrm{cut}}^{\mathrm{MS}}=o(m)$ must
+have
 \begin{equation*}
  B_{\mathrm{rel}}^{\mathrm{out}}(\mathcal A,m\mid\mathcal F_m)
  \geq m\log_2 3-o(m),
 \end{equation*}
-whereas family-relative optimal output $m+O(\log m)$ requires at least the linear
-cut budget of \eqref{eq:compact-cut-floor}.  This is a representation
+whereas family-relative optimal output $m+O(\log m)$ requires the cut
+budget $\lceil m\log_2 3\rceil-O(\log m)$ of \eqref{eq:compact-cut-floor}.  This is a representation
 tradeoff: the semantic aggregate stream attains both compact output and
 $O(\log m)$ cut budget.
 \end{corollary}
 
 \begin{proof}
 Use $B_{\mathrm{pre}}^{\mathrm{rel}}\leq
-B_{\mathrm{rel}}^{\mathrm{out}}$ in \eqref{eq:main-tradeoff}, then compare
-with the semantic construction in \cref{thm:main-tradeoff}.
+B_{\mathrm{rel}}^{\mathrm{out}}$ in \eqref{eq:main-tradeoff} for the first
+claim and \eqref{eq:compact-cut-floor} for the second, then compare with
+the semantic construction in \cref{thm:main-tradeoff}.
 \end{proof}
 
 \begin{remark}[Three points under one encoding]
@@ -2099,11 +2445,11 @@ bounds two explicitly named output-description codes via counting.
 adversary and the complete bit-level restart snapshot
 $B_{\mathrm{cut}}$.  A global ZX graph, phase-polynomial table, spilled
 store, large-precision parameter, addressed window, RAM/DAG, cache, hash
-table, dynamic pass schedule, or random seed is therefore an accounted
-recovery channel, not an exception.  The deterministic theorem allows
-arbitrary $p=p(m,I)$ in this charged model, and
-\eqref{eq:randomized-main-tradeoff} allows input-dependent randomized
-$p=p(m,I,\rho)$.  The balanced experimental schedule is not claimed to
+table, internal rescan schedule, or random seed is therefore an accounted
+recovery channel, not an exception.  Both parts of the theorem concern
+compilers that receive the stream once; internal rescans of retained data
+are allowed and charged.  For passes re-delivered by the source, the
+transcript bound of \cref{thm:w1-unified-frontier} applies instead.  The balanced experimental schedule is not claimed to
 instantiate this lower bound.
 \end{remark}
 
@@ -2189,8 +2535,9 @@ For a supported semantic input accepted as a commuting diagonal phase layer
 with $m$ independent phase terms, the semantic aggregation path emits an aggregate representative with at
 most $c_0 + c_1 m$ phase records before final lowering, for constants
 $c_0, c_1$ fixed by the representation and lowering conventions. Hence
-the constructive representative has size $O(m)$ and is independent of the
-repetition count $r$ at fixed width.
+the constructive representative has $O(m)$ phase records, a number
+independent of the repetition count $r$ at fixed width; the aggregated
+coefficients themselves can need $\Theta(\log r)$ bits each.
 \end{proposition}
 
 \begin{proof}
@@ -2283,42 +2630,55 @@ The stance of this campaign is explanatory, not competitive.  TKET
 PauliSimp and PyZX full-reduce already implement the semantic-first
 principle on their global IRs; the contribution of this paper is the
 bound that says what any such tool must pay to do so on a dispersed
-stream (\cref{cor:physical-lower-bounds}).  A preregistered scan tested
+stream (\cref{cor:physical-lower-bounds}).  A preregistered scan probed
 this on a third-party compiler the authors do not control: with
 predictions and decision rule committed before execution
 (\path{PaperDraft/research/E7_preregistration.md}), TKET PauliSimp was
-run on the masked-share family at $m\in\{8,16,32,64,128\}$, three seeds
-per size, in the byte-identical pass sequence of this campaign.  It
-achieved compact output in every cell ($508$ dispersed rotations
-aggregated to $127$ non-Clifford $R_z$ at $m=128$), and its measured
-pass-phase memory and serialized IR grew with log--log slope
-$\approx1.7$ in $m$---at least the linear growth that the
-$\Omega(m\log K_\epsilon)$ floor requires, and indeed more---while the
-instrumented semantic-input control stayed flat ($196\to199$ bytes over
-the same $16\times$ range of $m$).  The preregistered point prediction
-of \emph{exactly} linear growth was thereby rejected under its own
-frozen decision rule, and we report it as rejected; the one-sided lower
-bound is consistent with, and slack against, the superlinear
-measurement.  The frozen artifact is
+run at $m\in\{8,16,32,64,128\}$, three seeds per size, with the TKET
+pass sequence DecomposeBoxes, AutoRebase, RemoveRedundancies, PauliSimp,
+RemoveRedundancies, AutoRebase, on the four-round
+masked modular-share streams of the benchmark generator
+(\texttt{masked\_share\_update} with $r=4$ and $K=8$: shares modulo
+$8K=64$ on the chain characters $Z_jZ_{j+1}$, every share nonzero and
+none equal to the target coefficient).  These are dispersed streams in
+the sense of \cref{def:w1-dispersed-stream} at a fixed modulus; they are
+not the two-round $Q=3$ masked-share device of \cref{thm:main-tradeoff}.
+In every cell PauliSimp reduced the non-Clifford rotations to one per
+active term ($508$ dispersed rotations to $127$ non-Clifford $R_z$ at
+$m=128$), although its output was not compact in size: at $m=128$ it
+emitted $688$--$705$ $R_z$ gates in total and $5.3$ times the input
+QASM text.  Its process memory (mean RSS increment) grew monotonically
+in $m$, with log--log slope $1.70$ over $m\in\{32,64,128\}$, the range
+selected by the preregistered noise-floor rule ($1.14$ over all five
+sizes), while the instrumented semantic-input control stayed flat
+($196\to199$ bytes over the same $16\times$ range of $m$).  The
+preregistered prediction was monotone growth with log--log slope in
+$[0.7,1.5]$, evaluated on $m\in\{32,64,128\}$ when the small sizes fall
+below the noise floor; it was thereby rejected under its own frozen
+decision rule, and we report it as rejected, noting that the all-size
+slope would have fallen inside the interval.  The frozen artifact is
 \path{data/frozen/e7_tket_state_scaling.json}.  Two limits on what this
 scan is allowed to establish should be stated explicitly.  First, the
-quantity measured at a third-party API boundary is a pass-phase memory
-and serialized-IR snapshot, which is a configured-pipeline diagnostic in
+quantity measured at a third-party API boundary is a process-memory
+increment, which is a configured-pipeline diagnostic in
 the sense of \cref{tab:evidence-classes}: it is not promoted to a
 measurement of $B_{\mathrm{cut}}$ and is not commensurable with the $S$
-of the frontier.  The scan therefore tests only the qualitative
-dichotomy the theorem predicts---dispersed input forces growth in $m$,
-semantic input does not---and tests neither the constant nor the
-exponent.  Second, superlinear growth means the floor is not the binding
-constraint on this tool: the bound establishes the floor, the observed
-cost exceeds it, and the excess is implementation structure (the
-pairwise commutation structure of a Pauli graph is itself
+of the frontier.  The scan also has no arm that runs PauliSimp on the
+aggregated layer, and its input text itself grows linearly with $m$, so
+it does not isolate a cost of dispersal: it describes PauliSimp's
+behavior on dispersed streams, while the instrumented control shows only
+that the authors' semantic-input compiler stays flat.  It tests neither
+the constant nor the exponent of the frontier.  Second, because the measured quantity is not $B_{\mathrm{cut}}$, the scan
+cannot say how close this tool comes to the floor; growth faster than
+linear over the evaluated range is compatible with implementation
+structure (the pairwise commutation structure of a Pauli graph is itself
 superlinear in the number of terms).  No claim that
 the authors' implementation outperforms these tools is made or implied.
 
 \begin{lemma}[Dimension-preserving instrumentation]
 \label{lem:metric-conversion}
-For every accepted version-one artifact $A$, its reported size is exactly
+For every file $A$ named by an accepted version-one cut manifest
+(\cref{prop:file-backed-accounting}), its reported size is exactly
 $8\operatorname{stat}(A).\mathtt{st\_size}$ bits.  Address growth is charged by
 the literal varint bytes; in particular $127$ and $128$ have different address
 lengths.  There is no representation-independent conversion from gate count,
@@ -2487,8 +2847,12 @@ slice reflects IR share; RSS is recorded separately.}
 Echo commits updates early with little retained state; full aggregation
 occupies the state-heavy compact-output corner; and the three capped hybrids
 interpolate through explicit block commitments.  Their scaling fits and
-residuals are reported with the raw points, making this a direct measurement
-of the theorem resources rather than an inference from output gate count.
+residuals are reported with the raw points.  The measured quantities are the
+theorem's resources in its own bit units, but at these sizes they are
+dominated by a fixed serializer overhead of about $3.8$\,kbit, against a
+bound of $10$--$180$ bits; only the increments with $m$ are informative,
+and the trace is a consistency check of the accounting, not a test that
+could approach the bound.
 
 \subsection{Width-Axis Scaling}
 
@@ -2541,8 +2905,11 @@ linearly. The irrational independent-Pauli witness
     five scales on both witnesses, demonstrating that a generic pipeline
     can cross the formal boundary by reconstructing an aggregate Pauli
     representation.
-    \item Public staq rotation folding, \texttt{qiskit opt3}, and TKET
-    GuidedPauliSimp grow linearly with input size.
+    \item Public staq rotation folding and \texttt{qiskit opt3} grow
+    linearly with input size.  TKET GuidedPauliSimp returns exactly the
+    gate count of its lowered input at every size: it applies PauliSimp only
+    inside \texttt{CircBox} regions, which these flat inputs do not
+    contain, so it is not an optimizing baseline here.
     \item PyZX \texttt{full\_reduce} completes at small sizes but reaches
     time or correctness limits at larger scales.
 \end{itemize}
@@ -2553,8 +2920,9 @@ linearly. The irrational independent-Pauli witness
 \caption{Fixed-width non-inverse Fourier-layer scaling on the rational
 $H D^r H$ witness. Semantic UCC remains at 42 gates and rebased TKET
 PauliSimp returns 52--73 gates across the five scales. Public staq
-rotation folding, \texttt{qiskit opt3}, and TKET GuidedPauliSimp grow
-with input size; PyZX \texttt{full\_reduce} completes at 4k and reaches
+rotation folding and \texttt{qiskit opt3} grow with input size; TKET
+GuidedPauliSimp returns its lowered input unchanged in size (it acts only
+inside \texttt{CircBox} regions); PyZX \texttt{full\_reduce} completes at 4k and reaches
 the time budget at larger scales. Status-only cells are omitted from
 numerical curves.}
 \label{fig:fourier-separation}
@@ -2567,8 +2935,10 @@ numerical curves.}
 witness. Semantic UCC remains at 27 gates. Rebased TKET PauliSimp
 returns a small validated form at all five scales, demonstrating that a
 generic pipeline can cross the formal boundary by reconstructing an
-aggregate Pauli representation. Public staq rotation folding,
-\texttt{qiskit opt3}, and TKET GuidedPauliSimp grow with input size.
+aggregate Pauli representation. Public staq rotation folding and
+\texttt{qiskit opt3} grow with input size; TKET GuidedPauliSimp, which
+acts only inside \texttt{CircBox} regions, does not optimize these flat
+inputs.
 PyZX \texttt{full\_reduce} completes at 4k and 10k, fails the numerical
 tolerance at 20k, and reaches the time budget at larger scales.
 Status-only cells are omitted from numerical curves.}
@@ -2672,7 +3042,13 @@ The full $2\times3\times3\times2\times2\times4=\QRECells$ matrix crosses two tar
 sizes, three pipelines, three total errors, two allocation policies, two QEC
 profiles, and 1/4/16/32 factories.  All \QRECells\ rows are
 \texttt{completed\_valid}, carry a content-addressed exact-symbolic or dense
-$n\leq6$ certificate, and satisfy the requested total-error bound.  The two
+$n\leq6$ certificate, and satisfy the requested total-error bound.  The
+exact symbolic checker is sound but deliberately incomplete: it accepts
+every semantic-first row and the materialize-first rows of the 4k target,
+does not accept the $48$ materialize-first rows of the 20k target (its
+canonical records differ, which does not imply inequivalence), and stops
+with a predicate error on all $96$ TKET rows.  Those $144$ rows carry the
+dense $n\leq6$ unitary certificate instead, which every row passes.  The two
 surface-code profiles~\cite{fowler2012surface,horsman2012lattice,litinski2019game}
 use $p_{\rm phys}=10^{-3}$ and $10^{-4}$, respectively,
 with separately frozen data/factory coefficients, factory
@@ -2845,10 +3221,13 @@ Family & external-minus-authors gates [95\% CI] & strict success \\
 \input{generated/natural_families}
 \end{tabular}
 \caption{Complete structured-family summary against the matched external
-semantic-capable baseline.  The predeclared strict criterion requires valid
-outputs, no worse gate and CX counts at every primary cell, and lower measured
-compiler runtime at every primary scale and seed.  Non-winning families are
-retained.}
+semantic-capable baseline.  The gate column averages all $36$ matched cells
+of a family; the predeclared strict criterion is evaluated on the primary
+cells only (all-to-all topology, density $1$; nine per family) and
+requires valid outputs, no worse gate and CX counts at every primary cell,
+and lower measured compiler runtime at every primary scale and seed.  A
+family can therefore pass with a negative mean gate difference, as QPE
+controlled powers does.  Non-winning families are retained.}
 \label{tab:natural-factorial}
 \end{table*}
 
@@ -2856,8 +3235,10 @@ retained.}
 \centering
 \includegraphics[width=0.94\textwidth]{../figures/natural_workload_summary.pdf}
 \caption{Matched natural-family comparison and negative controls.  Error bars
-are paired bootstrap 95\% intervals; all structured families and both controls
-are retained.}
+are paired bootstrap 95\% intervals over matched cells; because the
+generators of several families do not depend on the seed, these intervals
+describe the spread over cells, not seed replication.  All structured
+families and both controls are retained.}
 \label{fig:natural-summary}
 \end{figure*}
 
@@ -2869,12 +3250,22 @@ Zero-effect factors are displayed rather than omitted.}
 \label{fig:natural-factorial}
 \end{figure*}
 
-Five structured families satisfy the predeclared all-size/all-seed criterion;
-QFT arithmetic and phase-polynomial blocks do not, and remain visible in
-\cref{tab:natural-factorial,fig:natural-summary}.  The largest isolated
-gate-count contribution is the preset recognizer, with mean reduction
-\PresetGateEffect\ and bootstrap interval
-[\PresetGateEffectLow,\PresetGateEffectHigh].  Aggregation and semantic lift
+Five structured families satisfy the predeclared criterion on their
+primary cells; QFT arithmetic and phase-polynomial blocks do not, and
+remain visible in \cref{tab:natural-factorial,fig:natural-summary}.  The
+seeds replicate less than the design suggests: the QPE controlled-power
+and QFT-arithmetic generators produce the same instance for every seed at
+both densities, and at density $1$ so do the Trotter,
+controlled-power-ladder, and phase-polynomial generators, so the
+criterion's ``every seed'' clause is vacuous on their primary cells.  Gate count is also not the
+fault-tolerant metric: in logical $T$ states the two compilers tie on five
+structured families, TKET PauliSimp is better on QAOA/Ising and on both
+negative controls, and the authors' path is better only on the Trotter
+family (\path{data/frozen/natural_workload_summary.csv}).  The largest
+isolated gate-count contribution is the preset recognizer, with mean
+reduction \PresetGateEffect\ and row-level bootstrap interval
+[\PresetGateEffectLow,\PresetGateEffectHigh]; the rows share instances
+across the other factors, so this interval understates the uncertainty.  Aggregation and semantic lift
 also have positive mean effects; selector, cache/reuse, and projected-block
 selection have zero isolated gate effect in this controlled implementation.
 Both negative controls have zero all-on-minus-all-off differences in gates,
@@ -2900,10 +3291,23 @@ representation-independent corollary of the bit lower bound.
 
 The representation gap propagates into the fault-tolerant resources of the
 explicit model in
-\cref{tab:resource-consequence,fig:qre-pareto,fig:qre-sensitivity}.  Over all 96
+\cref{tab:resource-consequence,fig:qre-pareto,fig:qre-sensitivity}.  The
+materialize-first pipeline is Qiskit's preset optimization level~3 (trivial
+layout, no routing) applied after the witness has been lowered to the
+basis $\{cx,rx,ry,rz,h\}$ at optimization level~0; TKET \texttt{PauliSimp}
+receives the same circuit lowered to a $cx$--$R_z$--$h$ bridge, and
+semantic-first receives the unlowered circuit
+(\path{scripts/run_qre_campaign.py}).  Over all 96
 matched target/error/allocation/QEC/factory settings, materialize-first uses
 385--1{,}753 times as many logical $T$ states and 538--5{,}573 times the spacetime
-volume of semantic-first.  No reversal occurs within the scanned error and
+volume of semantic-first: $385$--$501$ times the $T$ states at the 4k target
+and $1{,}367$--$1{,}753$ times at the 20k target.  The ratio grows with the
+$399$ and $1{,}999$ repetitions of the witness block because the
+materialize-first output keeps about $12$ rotations per repetition
+($4{,}792$ and $23{,}992$ in total), so its $T$ count grows about in
+proportion to the repetitions, whereas semantic-first keeps $22$ rotations
+at both sizes and its $T$ count changes only through their aggregate
+angles.  No reversal occurs within the scanned error and
 factory grid.  This is not a claim that the authors' implementation dominates
 other semantic tools: external TKET \texttt{PauliSimp} reconstructs the phase
 structure before synthesis and uses 0.443--0.536 times the semantic-first $T$
@@ -2935,7 +3339,7 @@ TKET path is reported on the semantic-capable side.}
 
 \paragraph{Phase-polynomial, Pauli-gadget, and ZX optimization.}
 Commuting-rotation aggregation is a standard optimization
-target~\cite{amy2014tdepth,nam2018automated,ross2016optimal,cowtan2020phase,sivarajah2021tket,duncan2020graph,kissinger2020reducing,kissinger2020pyzx}.
+target~\cite{amy2014tdepth,nam2018automated,cowtan2020phase,sivarajah2021tket,duncan2020graph,kissinger2020reducing,kissinger2020pyzx}.
 The phase-polynomial line makes the generator--coefficient structure
 explicit and then re-synthesizes the parity network, with or without a
 connectivity
@@ -3007,22 +3411,26 @@ follow~\cite{quetschlich2023mqt,tomesh2022supermarq,mills2021application,li2023q
 The downstream cost of a $T$ gate is set by distillation and by the
 scheduling
 model~\cite{bravyi2005magic,fowler2012surface,horsman2012lattice,litinski2019game,litinski2019magic}.
-End-to-end estimates for concrete algorithms~\cite{gidney2021factor} and
-the estimation frameworks that generalize
-them~\cite{beverland2022assessing,watkins2024surfacecode} establish the
-methodology used in \cref{sec:ft-consequences}: upstream rotation
-multiplicity and synthesis accuracy propagate through distillation and
-scheduling into spacetime cost, and the margin available to a quadratic speedup is
-thin enough that they matter~\cite{babbush2021focus}.  Our QRE campaign
+End-to-end estimates for concrete algorithms~\cite{gidney2021factor}
+propagate non-Clifford gate counts through distillation and layout into
+spacetime cost, and estimation frameworks that count arbitrary-angle
+rotations make their number and per-rotation synthesis accuracy enter
+through the $T$ count per rotation~\cite{beverland2022assessing}; this is
+the methodology used in \cref{sec:ft-consequences}.  The margin available
+to a quadratic speedup is thin enough that such factors
+matter~\cite{babbush2021focus}, and resource-estimating compilers such as
+that of Ref.~\cite{watkins2024surfacecode} implement the same accounting.  Our QRE campaign
 is an instance of this methodology under a disclosed model, not a new
 estimator.
 
 \paragraph{Noise tailoring and error mitigation.}
 Randomized compiling and Pauli
 twirling~\cite{wallman2016noise,hashim2021randomized,knill2005realistically}
-are the mechanism that produces the dispersed stream we analyze, and
-their sign randomization is exactly the transformation our
-\cref{lem:clifford-interleaving} normalizes.  The broader mitigation
+act on the dispersed streams we analyze without creating the dispersal,
+which comes from the schedule: their sign randomization is exactly the
+transformation our \cref{lem:clifford-interleaving} normalizes, and in
+frame-tracked form it adds the Pauli frame to the crossing state
+(\cref{prop:frame-cross-cut}).  The broader mitigation
 literature~\cite{cai2023mitigation}, including learned sparse noise
 models used for probabilistic error
 cancellation~\cite{vandenberg2023probabilistic}, shares the structural
@@ -3052,15 +3460,16 @@ records.  The cyclic packing gives
 $\Omega(m\log(1/\epsilon))$ bits separately for family-relative and
 self-contained output codes and is compatible with an $r$-round modular
 share stream.  In the stated forward-scan model its pass-explicit frontier is
-$\overline A_p+(2p-1)S\geq
-(1-\delta)m\log_2K-h_2(\delta)$
+$\overline A_p+pS\geq
+(1-\delta)m\log_2K-h_2(\delta)-\lceil\log_2(p+1)\rceil$
 (\cref{thm:w1-unified-frontier}).  Thus a deferred flat compiler needs
-$S=\Omega(m\log K/p)$.  The block hybrid attains
-$S=O((m/p)\log(K+1))$ with compact family-relative output, within the
-proved constant factor, while the direct semantic vector uses only
-$O(\log(mK))$ state
-(\cref{prop:w1-block-hybrid,prop:w1-semantic-upper}).  The older binary
-two-round theorem remains a sharper zero-error, one-pass special case.
+$S\geq(m\log_2K)/p$ to leading order.  The block hybrid attains this with
+compact family-relative output, to leading order whenever $p$ is small
+compared with $m/\log m$, while the direct semantic vector uses only
+$O(\log m\cdot\log K)$ state
+(\cref{prop:w1-block-hybrid,prop:w1-semantic-upper}).  The binary
+two-round theorem remains a sharper zero-error special case for
+single-delivery compilers.
 
 This boundary is channel-explicit.  Equation~\eqref{eq:info-budget}
 serializes control, store, window structure, every live parameter, every
@@ -3076,12 +3485,14 @@ than treated as a free semantic side channel.
     \item The results have different scopes.  The unified theorem
     (\cref{thm:w1-unified-frontier}) covers $r$-round additive shares,
     randomized failure, and $p=p(m)$ forward scans of the round-major
-    stream, but charges all $2p-1$ serialized crossings and claims only a
-    constant-factor state upper envelope.  Reverse scans, an uncharged
+    stream; only the $p$ forward crossings carry information, and the
+    matching construction attains the bound to leading order for $p$ small
+    compared with $m/\log m$.  Reverse scans, an uncharged
     random-access input oracle, or a different output code are outside that
     theorem.  The older representation-dependent tradeoff
     (\cref{thm:main-tradeoff}) is scoped to the two-round masked-share
-    stream and gives the stronger deterministic one-pass mask count.  The
+    stream and to compilers that receive the stream once; it gives the
+stronger deterministic one-pass mask count.  The
     exact-semantics corollary is scoped to fixed width, constant pass/cut
     budget, and certified noncollision.  The growing-width theorems instead
     use the complete bit codec and allow random access and dynamic
@@ -3091,21 +3502,27 @@ than treated as a free semantic side channel.
     narrowly scoped result here, and deliberately so.  It is a
     two-sided statement about a compiler class, not about commitment in
     general: clause (i) needs the prefix to be \emph{executed} at the
-    cut, so that it must name the coordinates it acts on, and clause
-    (ii) exhibits an admissible buffered compiler that pays nothing.
+    cut and assumes that it dispatches one record per dispersed
+    coordinate, and clause (ii) exhibits an admissible buffered compiler
+    that pays nothing.
     The bound is also on an ensemble of masks compiled by one
     mask-uniform algorithm; for a single mask known to the serializer
-    there is no toll to pay.  The payload term is charged against the
+    there is no toll to pay.  Payload and toll are charged against the
     declared record content rather than the round-one unitary, which
     fixes it only up to zero residues and the
-    $(s,a)\mapsto(-s,-a)$ degeneracy (\cref{rem:self-id-scope}).  Both
+    $(s,a)\mapsto(-s,-a)$ degeneracy (\cref{rem:self-id-scope}); at
+    unitary level the proved lower bound on the toll is smaller,
+    asymptotically $0.918$ instead of $2$ bits per committed generator at
+    $Q=3$, $k=m/2$, and $1.99$ instead of $2$ on the $\epsilon=10^{-3}$
+    grid (\cref{cor:unitary-toll}); it is proved but not measured, and
+    only the record-level toll is measured.  Both
     clauses are measured only on the instrumented device of
     \cref{fig:commit-toll}; the two preregistered attempts to observe
     the toll at a third-party compiler boundary failed and are reported
     as failures.
     \item The tuned cyclic packing is stated for
-    $0<\epsilon\leq1/8$ and chooses sharing modulus
-    $Q_\epsilon=K_\epsilon+1$.  Its coefficient interval can cross $\pi$;
+    $0<\epsilon\leq1/8$ and uses the full residue alphabet,
+    $K_\epsilon=Q_\epsilon$.  Its coefficient interval wraps around the circle;
     \cref{thm:w1-exact-separation} handles circular distance and global
     phase exactly.  The prior no-wrap packing and the binary/$\mathbb Z_3$
     theorem remain separate valid specializations.
@@ -3140,42 +3557,33 @@ than treated as a free semantic side channel.
 \section{Conclusion}
 \label{sec:conclusion}
 
-We have formalized approximate recoverability with a growing-width token
-codec and a bit-level cut budget whose five executable serialization fields
-include parameter, RAM/cache, random-seed, dynamic-pass, and IR channels.
-The cyclic $K_\epsilon$-ary family has exact minimum separation
-$2\sin(\pi/(2(K_\epsilon+1)))$, satisfies
-$K_\epsilon=\Theta(1/\epsilon)$, and admits semantic and $r$-round flat
-representations of the same $U_x$ even though no individual update
-determines $x_j$.  For randomized failure $\delta$ and $p=p(m)$ forward
-passes, each named output code, as well as the sum of the prefix-side
-commitment and crossing transcript, requires at least
-$(1-\delta)m\log_2K_\epsilon-h_2(\delta)$ expected bits.  Hence a deferred
-compiler satisfies $(2p-1)S\geq
-(1-\delta)m\log_2K_\epsilon-h_2(\delta)$.  A block hybrid reaches compact
-family-relative output with
-$S=O((m/p)\log(K_\epsilon+1))$, within the proved constant factor, and the
-randomized relative-output bound is matched up to framing.  The semantic
-vector achieves compact output with logarithmic state.  The two payment
-channels exchange at par in the frontier but not everywhere beneath it:
-commitment that is \emph{executed} at the cut additionally pays
-$\log_2\binom{m}{k}$, the entropy of the dispersal mask, while deferred and
-merely buffered commitment pay none of it, and we prove and measure both
-directions rather than only the one that favors the thesis.  The
-exact-semantics corollary retains the fixed-width final-output lower bounds
-of the prior version.  The traced reference-compiler suite measures the
-named commitment, state, and IR channels directly; the matched and external
-campaigns show when global semantic tools recover compact structure; and the
-natural-workload factorial records positive, null, and negative-control
-outcomes without selection.  Fixed-total-error synthesis/QRE propagates the
-measured rotation multiplicities of the configured pipelines through an
-explicit physical model; the bit lower bound alone does not determine that
-cost.  Every W3--W9
-headline measurement is generated from the normalized frozen-data registry,
-while retained legacy diagnostics are labelled historical.  Recoverability
-should be treated as a controlled variable in compilation and resource
-estimation.
-
+Consider a compiler that receives a commuting phase layer after
+scheduling has split it and randomized compiling has re-signed the
+pieces, and that reads the stream in forward passes.  Provided the rounds of
+the layer are contiguous up to generator-permuting Clifford records, the
+round coefficients vary freely, and the compiler is correct with
+probability at least $1-\delta$ on every such stream, its early output
+and the state it carries across its crossings must total at least
+$(1-\delta)m\log_2K_\epsilon-h_2(\delta)$ bits, about
+$\log_2(1/\epsilon)$ per independent term.  At $\delta=0$ a single-pass
+memory-capped compiler that emits one aggregated rotation per term meets
+that price to leading order.
+The two channels part ways when the committed first-round rotations are
+applied at the cut.  For a randomly chosen dispersal pattern that prefix
+then needs, on average, at least the entropy of the pattern if it must
+address its targets, and a smaller but still linear amount if it need
+only implement the rotations; buffered output need not pay.  A software
+model attains the record-level toll, and a buffered control pays none,
+in a preregistered run.  Under one disclosed synthesis and surface-code
+model, a repeated four-qubit layer left partly unmerged by Qiskit's
+highest preset optimization level, given the pre-lowered circuit, needs
+hundreds to thousands of times the logical $T$ states of our compiler's
+output, a ratio that grows with the number of repetitions, while TKET's
+PauliSimp, given the same input, rebuilds the phase structure and needs
+about half as many.  Recoverability is thus
+a quantity that a software stack can budget for: where the interface
+allows, randomize and lower late, and keep phase semantics until the
+coefficients have been merged.
 
 \section*{Reproducibility}
 \label{sec:reproducibility}
@@ -3272,15 +3680,22 @@ No.~2021ZD0301703), the Guangdong Major Project of Basic Research (Grant
 No.~2025B0303000007), and the Shenzhen Science and Technology Program
 (Grant No.~KQTD20200820113010023).
 
+% The lead-in below introduces the classical passages; the PRR build omits
+% both, so the lead-in does not dangle there.
+\ifdefined\PRRSubmissionVersion
+\else
 This paper pays particular attention to provenance: every printed number is
 traceable to a unique source row, every experiment to a frozen registry, and
 every preregistered prediction to a criterion written down before the run.  That being
 so---\emph{what one begins with, one must end with} (\emph{Zuo Zhuan},
 Xuan 12)---it is fitting to record the provenance of the framing as well,
 even though that provenance does not lie in the physics literature.
+\fi
 
-% Retained in the arXiv version; omitted from the Quantum submission version.
+% Retained in the arXiv version; omitted from the Quantum and PRR
+% submission versions.
 \ifdefined\QuantumSubmissionVersion
+\else\ifdefined\PRRSubmissionVersion
 \else
 Two passages from the classical Chinese canon shaped parts of this work.
 Their relevance is direct, and the acknowledgements provide a fitting
@@ -3324,13 +3739,14 @@ strained may discard them entirely and judge the paper by whatever in it
 proves useful.  They are recorded because the question did come from there
 and because, for a framing as for a datum, a reader may rightly ask where it
 came from.  Translations are J.Y.'s own.
-\fi
+\fi\fi
 
 \begingroup
 \looseness=-1
-Generative AI tools were used to assist with manuscript drafting and
+Generative AI tools, including large language model assistants such as
+Claude (Anthropic), were used to assist with manuscript drafting and
 revision, code and repository maintenance, literature discovery, and
-consistency checks.  The authors directed its use through task-specific
+consistency checks.  The authors directed their use through task-specific
 prompts and independently reviewed the generated text, citations, code, and
 numerical claims against the cited literature, source files, executable tests,
 and the symbolic or dense certificates reported in this work.  AI output was
@@ -3351,7 +3767,21 @@ computational artifacts.  All authors wrote the manuscript together,
 discussed the results, and approved the final version.
 
 
+\ifdefined\PRRSubmissionVersion
+\section*{Data availability}
+
+The frozen datasets, analysis and figure scripts, the compiler snapshot used
+in the experiments, and the build that regenerates every table, figure, and
+reported number are openly available at
+\url{https://github.com/OIerYangJZ/representation-as-resource}.  The
+approximately 700-MB raw run tree described in the Reproducibility section is
+held in a separate archive and is available from the corresponding authors
+upon reasonable request.
+
+% REVTeX selects apsrev4-2 and writes its control entry itself.
+\else
 \bibliographystyle{quantum}
+\fi
 \bibliography{references}
 
 

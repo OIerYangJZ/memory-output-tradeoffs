@@ -331,9 +331,22 @@ The machine-readable index
 profiles and five noninterchangeable campaigns.  \texttt{RP23} is the
 pass-order probe, \texttt{HW24} is the canonical line-backend campaign,
 \texttt{REAL24} is the official real-instance anti-regression panel,
-\texttt{MR25} is the matched-representation matrix, and \texttt{NF25} is the
-natural-kernel factorial ablation.  Each prefix is unique and must appear in a
-reader-facing label before the source instance name.
+\texttt{MR25} is the earlier $525$-cell matched-representation matrix, and
+\texttt{NF25} is the earlier $1{,}120$-cell natural-kernel factorial
+ablation.  Each prefix is unique and must appear in a reader-facing label
+before the source instance name.  The matched-representation benchmark and
+the natural-workload ablation reported in the main text are the later
+campaigns \texttt{w4-matched-representation-20260802} and
+\texttt{w8-natural-factorial-20260803-local}, registered in
+\path{data/manifest.yaml} with receipts
+\path{data/frozen/matched_representation_freeze_manifest.json} and
+\path{data/frozen/natural_workload_analysis.json}; \texttt{MR25} and
+\texttt{NF25} are retained as historical diagnostics.  The per-bundle
+\path{SHA256SUMS} files under \path{PaperDraft/research/} seal each bundle
+at its freeze; five of them no longer match the current files (generator
+scripts and, for the claim-evidence bundle, its rows), which were revised
+after the freeze, and the seals are kept unchanged as historical
+records.
 
 Every campaign manifest records or explicitly marks unavailable the backend
 topology, native gate set, seed, timeout policy, memory cap, tool versions,

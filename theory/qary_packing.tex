@@ -36,10 +36,10 @@ For every $m\geq1$,
 \end{equation}
 Consequently the family is projectively injective exactly when
 $\gamma(K,\Delta)>0$.  If $(K-1)\Delta\leq\pi$, then
-$\gamma(K,\Delta)=\Delta$.  If $Q\geq K+1$ and
+$\gamma(K,\Delta)=\Delta$.  If $Q\geq K$ and
 $\Delta=2\pi/Q$, then again $\gamma(K,\Delta)=\Delta$, even though the
 coefficient interval $[0,(K-1)\Delta]$ may cross the principal-argument
-cut at $\pi$.
+cut at $\pi$; in particular the full residue alphabet $K=Q$ is allowed.
 \end{theorem}
 
 \begin{proof}
@@ -60,8 +60,8 @@ two points with circular separation $\gamma(K,\Delta)$, so centering the
 shorter arc attains $2\sin(\gamma/4)$.  This proves equality.  Under the
 no-wrap hypothesis, every $d\Delta$ lies in $[\Delta,\pi]$, whose minimum
 is $\Delta$.  For $\Delta=2\pi/Q$ and
-$1\leq d\leq K-1\leq Q-2$, every nonzero grid distance is at least
-$2\pi/Q$, with equality at $d=1$.
+$1\leq d\leq K-1\leq Q-1$, the circular distance of $d\Delta$ from $0$ is
+$(2\pi/Q)\min\{d,Q-d\}\geq2\pi/Q$, with equality at $d=1$.
 \end{proof}
 
 \begin{corollary}[$\epsilon$-tuned cyclic family]
@@ -70,7 +70,7 @@ For $0<\epsilon\leq1/8$, let
 \begin{equation}
  Q_\epsilon:=\left\lfloor
  \frac{\pi}{2\arcsin(2\epsilon)}\right\rfloor,
- \qquad K_\epsilon:=Q_\epsilon-1,
+ \qquad K_\epsilon:=Q_\epsilon,
  \qquad \Delta_\epsilon:=\frac{2\pi}{Q_\epsilon}.
  \label{eq:w1-epsilon-grid}
 \end{equation}
@@ -84,25 +84,29 @@ Then
  \label{eq:w1-epsilon-pack}
 \end{equation}
 Thus, with $\mathcal G_{m,\epsilon}:=
-\{U_x:x\in[K_\epsilon]_0^m\}$,
+\{U_x:x\in\mathbb Z_{Q_\epsilon}^m\}$,
 \begin{equation}
  \log_2|\mathcal G_{m,\epsilon}|
  =m\log_2K_\epsilon
  =\Theta\!\left(m\log\frac1\epsilon\right).
  \label{eq:w1-packing-entropy}
 \end{equation}
-The allowed coefficient interval is
-$[0,(Q_\epsilon-2)2\pi/Q_\epsilon]$.  It can extend beyond $\pi$ but
-omits the residue $Q_\epsilon-1$; \cref{eq:w1-exact-separation}, rather
-than a principal-interval argument, controls its wraparound.
+The aggregate alphabet is the full residue group, so the coefficient
+interval $[0,(Q_\epsilon-1)2\pi/Q_\epsilon]$ wraps around the circle;
+\cref{eq:w1-exact-separation}, rather than a principal-interval argument,
+controls the wraparound.  We keep the name $K_\epsilon$ for the alphabet
+size because the no-wrap codebook of \cref{prop:epsilon-packing} uses a
+different one, $\bar K_\epsilon$.
 \end{corollary}
 
 \begin{proof}
-The bound $\arcsin(2\epsilon)\leq\pi\epsilon$ and
+At $\epsilon=1/8$ one has $Q_\epsilon=6$, so $Q_\epsilon\geq6$ throughout the
+range.  The bound $\arcsin(2\epsilon)\leq\pi\epsilon$ and
 $\lfloor a\rfloor\geq a-1$ give
-$K_\epsilon\geq1/(2\epsilon)-2\geq1/(4\epsilon)$; the reverse bound uses
+$K_\epsilon\geq1/(2\epsilon)-1\geq1/(4\epsilon)$; the reverse bound uses
 $\arcsin(2\epsilon)\geq2\epsilon$.  Since
 $Q_\epsilon\leq\pi/[2\arcsin(2\epsilon)]$,
 $\pi/(2Q_\epsilon)\geq\arcsin(2\epsilon)$.  Apply
-\cref{thm:w1-exact-separation}.  The cardinality statement is immediate.
+\cref{thm:w1-exact-separation} with $K=Q_\epsilon$.  The cardinality
+statement is immediate.
 \end{proof}

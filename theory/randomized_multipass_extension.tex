@@ -10,37 +10,37 @@ Put
 
 \begin{theorem}[$K$-ary randomized multipass recoverability frontier]
 \label{thm:w1-unified-frontier}
-Let $Q\geq3$, $K=Q-1$, and
+Let $Q\geq3$, $2\leq K\leq Q$, and
 $0\leq\epsilon<\sin(\pi/(2Q))$.  Let a possibly randomized compiler be
 correct within projective error $\epsilon$, with probability at least
 $1-\delta$ for every $x\in[K]_0^m$ and every valid $r$-round dispersed
 representation of $x$.  Assume that it makes at most $p=p(m)$ forward
 passes in the charged model of \cref{def:w1-pass-accounting}.  Then:
-\begin{align}
- \overline B_{\mathrm{rel}}^{\mathrm{out}}
- &\geq L_\delta(m,K),
- &
- \overline B_{\mathrm{self}}^{\mathrm{out}}
- &\geq L_\delta(m,K),
+\begin{gather}
+ \overline B_{\mathrm{rel}}^{\mathrm{out}}\geq L_\delta(m,K),
+ \qquad
+ \overline B_{\mathrm{self}}^{\mathrm{out}}\geq L_\delta(m,K),
  \label{eq:w1-output-lower}\\
- \overline A_p+\overline\Sigma_p
- &\geq L_\delta(m,K).
+ \overline A_p+\overline\Sigma^{\to}_p
+ \geq L_\delta(m,K)-\lceil\log_2(p+1)\rceil.
  \label{eq:w1-pass-lower}
-\end{align}
+\end{gather}
 In particular, for the worst-input expected crossing cap $S$ of
 \cref{def:w1-pass-accounting},
 \begin{equation}
- \boxed{\quad
- \overline A_p+(2p-1)S
- \geq(1-\delta)m\log_2K-h_2(\delta).
- \quad}
+ \boxed{
+ \begin{aligned}
+ &\overline A_p+pS\\
+ &\quad\geq(1-\delta)m\log_2K-h_2(\delta)-\lceil\log_2(p+1)\rceil,
+ \end{aligned}}
  \label{eq:w1-frontier-box}
 \end{equation}
+and \emph{a fortiori} $\overline A_p+(2p-1)S$ obeys the same bound.
 Here $S$ includes RAM, parameters, cache/hash metadata, materialized input,
 and all IR fields from \eqref{eq:info-budget}; it is not a RAM-only bound.
 For the tuned choice of \cref{cor:w1-epsilon-cyclic}, both right-hand sides
 are $\Omega((1-\delta)m\log(1/\epsilon))$ for fixed
-$\delta<1/2$.
+$\delta<1/2$ and $p=2^{o(m)}$.
 \end{theorem}
 
 \begin{proof}
@@ -60,31 +60,57 @@ For \eqref{eq:w1-pass-lower}, independently choose a uniform prefix
 aggregate $U\in\mathbb Z_Q^m$, put it in the first prefix round, put zero
 in any other prefix rounds, and set the last share $V=X-U\pmod Q$.
 Then $V$ is uniform and independent of $X$, so
-$H(X\mid V)=m\log_2K$.  Convert the $p$ scans into the standard alternating
-simulation across the $A\mid B$ partition.  The transcript $T$ contains
-each complete crossing snapshot and all output chunks written on Alice's
-side.  Given $T$ and $V$, Bob can reproduce every Bob-side segment and the
-complete final output; random-tape state and dynamic control are present in
-the crossing serialization.  The output decoder therefore recovers $X$
-with error at most $\delta$, and conditional Fano yields
+$H(X\mid V)=m\log_2K$.  Run the compiler and record the forward
+transcript
+\begin{equation*}
+ T:=\bigl(c,\ \mathsf s_1,O_1,\ \ldots,\ \mathsf s_c,O_c,\ O_{\mathrm{fin}}\bigr),
+\end{equation*}
+where $c\in\{0,\ldots,p\}$ is the number of forward crossings, written in
+$\lceil\log_2(p+1)\rceil$ bits; $\mathsf s_t$ is the five-field snapshot at the
+$t$-th crossing $A\to B$; $O_t$ is the output written while scanning $A$
+just before that crossing; and $O_{\mathrm{fin}}$ is any output written in
+$A$ after the last crossing (after a final rewind, or in a run that never
+reaches $B$).  Given $T$ and $V$, Bob reproduces the whole run.
+From $\mathsf s_t$ and $V$ he simulates the scan of $B$, including the random
+tape and dynamic control that $\mathsf s_t$ serializes, and thereby obtains the
+Bob-side output and the rewind snapshot; the rewind snapshot is therefore a
+function of $(\mathsf s_t,V)$ and need not be transmitted.  The control field
+of $\mathsf s_t$ records the emitted-prefix length, which gives $|O_t|$ once
+$\mathsf s_t$ is read, so $\mathsf s_t$ is placed before $O_t$.  After the $c$-th
+crossing, $O_{\mathrm{fin}}$ completes a codeword of the prefix-free output
+code and is therefore self-delimiting.  Hence $T$ is a prefix-free code for
+each fixed $V$.  It determines the final output, the output decoder recovers
+$X$ with error at most $\delta$, and conditional Fano yields
 \begin{equation*}
  I(X;T\mid V)\geq L_\delta(m,K).
 \end{equation*}
-The framed transcript is prefix-free conditional on $V$, so its expected
-literal length is at least this information.  Its length is precisely
-$A_p+\Sigma_p$ up to fields already included in the self-delimiting
-serializers.  Maximizing over inputs proves \eqref{eq:w1-pass-lower}; the
-cap and tuned-$\epsilon$ consequences follow.
+The expected length of a prefix-free code is at least this conditional
+information, and that length is
+$\lceil\log_2(p+1)\rceil+A_p+\Sigma^{\to}_p$.  Maximizing over inputs proves
+\eqref{eq:w1-pass-lower}.  Since each of the at most $p$ forward crossings
+has expected maximum budget at most $S$, the boxed form follows.  The tuned
+consequence follows from \cref{cor:w1-epsilon-cyclic}.
 \end{proof}
 
 \begin{remark}[What is and is not optimal]
 \label{rem:w1-optimality-scope}
 Equation~\eqref{eq:w1-output-lower} is an output-information bound and
 \eqref{eq:w1-frontier-box} is a transcript bound; neither converts
-self-contained circuit bits into gates.  The factor $2p-1$ counts the
-actual alternating crossings of a forward scan.  A random-access input
-oracle, an uncharged rereadable file, or reverse scans would be a different
-model.  For $p=1$ and zero error, \cref{thm:w1-one-pass-mask} strengthens
-$m\log_2K$ to $m\log_2(K+1)$.  No such strengthening is claimed for
-randomized or general multipass protocols.
+self-contained circuit bits into gates.  A forward scan alternates $2p-1$
+times between the earlier rounds and the last one, as in the standard
+simulation of $p$ passes by a $(2p-1)$-message protocol, but only the $p$
+messages into the last round carry information about the earlier rounds:
+each rewind snapshot is a function of the preceding forward snapshot and of
+the last round.  This is why the bound charges $p$ crossings and not
+$2p-1$.  A random-access input oracle, uncharged rereading outside the
+counted forward passes, or reverse scans would be a different model;
+re-delivery of the whole stream at the start of each counted pass is part
+of this one (\cref{def:w1-pass-accounting}).  For $p=1$ and a
+deterministic zero-error compiler,
+\cref{thm:w1-one-pass-mask} gives the integer form
+$A_1+B_{\mathrm{cut}}\geq\lceil m\log_2Q\rceil$ for $K\in\{Q-1,Q\}$,
+which for $K=Q-1$ is slightly stronger than $m\log_2K$.  For the full
+alphabet $K=Q$ the constructions of \cref{sec:w1-upper} attain
+\eqref{eq:w1-pass-lower} and \eqref{eq:w1-frontier-box} at $\delta=0$ to
+leading order.
 \end{remark}

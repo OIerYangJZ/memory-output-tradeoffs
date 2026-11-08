@@ -73,3 +73,6 @@ PaperDraft/research/*/tools/staq_rotation_optimizer_macos_arm64
 # local virtualenvs
 .venv/
 venv/
+
+# REVTeX auxiliary bibliography control file (PRR build)
+PaperDraft/*Notes.bib

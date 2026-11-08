@@ -4,8 +4,9 @@
 \begin{definition}[$r$-round dispersed update stream]
 \label{def:w1-dispersed-stream}
 The cyclic specialization of \cref{def:phase-family} with modulus
-$Q\geq3$, $K=Q-1$, $\Delta=2\pi/Q$, $r\geq2$ rounds, and
-$\Sigma=\{+1\}$: for $x\in[K]_0^m$ the shares
+$Q\geq3$, aggregate alphabet $[K]_0$ with $2\leq K\leq Q$ (the tuned
+families use the full alphabet $K=Q$), $\Delta=2\pi/Q$, $r\geq2$ rounds,
+and $\Sigma=\{+1\}$: for $x\in[K]_0^m$ the shares
 $a^{(1)},\ldots,a^{(r)}\in\mathbb Z_Q^m$ satisfy
 \begin{equation}
  \sum_{t=1}^r a_j^{(t)}=x_j\pmod Q
@@ -48,37 +49,47 @@ uniform, including the last share after conditioning on $x_j$.
 \label{def:w1-pass-accounting}
 Partition the round-major stream into Alice's prefix $A$ (rounds
 $1,\ldots,r-1$) and Bob's suffix $B$ (round $r$).  A forward $p$-pass
-compiler scans $AB$ from left to right at most $p=p(m)$ times.  There are
-$p$ crossings $A\to B$ and at most $p-1$ rewind crossings $B\to A$.
-At every crossing, the complete restart state is the five-field
-serialization of \eqref{eq:info-budget}; rereadable input and every live
-IR object are therefore included.  For a run on $I$, let $A_p(I)$ be the
+compiler scans $AB$ from left to right at most $p=p(m)$ times, so a run
+makes at most $p$ forward crossings $A\to B$ and at most $p-1$ rewind
+crossings $B\to A$; crossings that do not occur contribute zero below.
+Each new pass is delivered by the input source from the start of the
+stream, as in the standard multipass streaming model; that re-delivery is
+accounted for by the pass count and the rewind crossing, not as stored
+state.  At every crossing, the complete restart state is the five-field
+serialization of \eqref{eq:info-budget}; any copy of the input that the
+compiler itself retains, and every live IR object, are therefore
+included.  For a run on $I$, let $A_p(I)$ be the
 number of bits
 irreversibly committed to the final output while the machine scans $A$,
 summed over all passes, and define
 \begin{equation}
- \Sigma_p(I):=\sum_{t=1}^{p}B_{\mathrm{cut}}(c_{A\to B,t})
+\begin{aligned}
+ \Sigma^{\to}_p(I)&:=\sum_{t=1}^{p}B_{\mathrm{cut}}(c_{A\to B,t}),\\
+ \Sigma_p(I)&:=\Sigma^{\to}_p(I)
        +\sum_{t=1}^{p-1}B_{\mathrm{cut}}(c_{B\to A,t}).
+\end{aligned}
  \label{eq:w1-transcript-budget}
 \end{equation}
-Both are literal, self-delimiting transcript lengths.  Unbarred resource
+Both are literal transcript lengths; the five-field serialization is
+self-delimiting, and its control field records the emitted-prefix
+length.  Unbarred resource
 symbols take maxima over valid inputs.  For randomized compilers, write
 \begin{equation*}
  \overline A_p:=\max_I\mathbb E_\rho A_p(I,\rho),\qquad
- \overline\Sigma_p:=\max_I\mathbb E_\rho\Sigma_p(I,\rho),
+ \overline\Sigma^{(\to)}_p:=\max_I\mathbb E_\rho\Sigma^{(\to)}_p(I,\rho),
 \end{equation*}
 and let
 $S:=\max_I\mathbb E_\rho[\max_cB_{\mathrm{cut}}(c;I,\rho)]$ over the
 $2p-1$ named crossings.  Then
-$\overline\Sigma_p\leq(2p-1)S$; the deterministic version is identical
-without expectations.
+$\overline\Sigma^{\to}_p\leq pS$ and $\overline\Sigma_p\leq(2p-1)S$;
+the deterministic version is identical without expectations.
 \end{definition}
 
 \begin{theorem}[One-pass zero-error mask bound]
 \label{thm:w1-one-pass-mask}
 Let a deterministic one-pass compiler be correct to
 $\epsilon<\sin(\pi/(2Q))$ on every valid stream of
-\cref{def:w1-dispersed-stream}.  Then
+\cref{def:w1-dispersed-stream} with $K\in\{Q-1,Q\}$.  Then
 \begin{equation}
  A_1+B_{\mathrm{cut}}(c_{A\to B,1})
  \geq\left\lceil m\log_2Q\right\rceil.
@@ -91,12 +102,18 @@ For each $u\in\mathbb Z_Q^m$, choose a canonical prefix whose aggregate
 is $u$ (put $u$ in its first round and zero in the other prefix rounds).
 The committed prefix and restart state after this prefix must distinguish
 all $Q^m$ choices.  Indeed, for $u\neq u'$, choose one common final share
-$v$ coordinatewise.  At each coordinate at most two residues of $v_j$
-would make either $u_j+v_j$ or $u'_j+v_j$ equal to the single excluded
-aggregate $Q-1$; since $Q\geq3$, an allowed $v_j$ exists.  Both completions
-are valid, and they differ in every coordinate in which $u$ and $u'$ differ.
+$v$ coordinatewise.  For $K=Q$ take $v=0$.  For $K=Q-1$, at each
+coordinate at most two residues of $v_j$ would make $u_j+v_j$ or
+$u'_j+v_j$ equal to the single excluded aggregate $Q-1$; since $Q\geq3$,
+an allowed $v_j$ exists.  Both completions are valid, and their
+aggregates differ in every coordinate in which $u$ and $u'$ differ.
 By \cref{thm:w1-exact-separation}, one circuit cannot be within
-$\epsilon$ of both targets.  The messages are prefix-free under the
-declared serializers, so Kraft's inequality gives
-\eqref{eq:w1-one-pass-mask}.
+$\epsilon$ of both targets, while a deterministic one-pass suffix
+computation is a function of the snapshot and the suffix.  A run that halted inside the prefix would give the same output for two
+completions with different targets, so every run reaches the crossing.
+Hence the map $u\mapsto\mathsf{ser}(\mathsf s_u)\cdot O_A(u)$, the
+five-field snapshot followed by the committed prefix, is injective.  The snapshot
+serialization is self-delimiting and its control field records the
+emitted-prefix length, so these messages form a prefix-free set, and
+Kraft's inequality gives \eqref{eq:w1-one-pass-mask}.
 \end{proof}

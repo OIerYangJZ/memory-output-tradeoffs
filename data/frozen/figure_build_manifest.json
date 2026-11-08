@@ -14,9 +14,9 @@
       ]
     },
     "eta_sweep_pareto.pdf": {
-      "bytes": 21819,
+      "bytes": 22158,
       "path": "figures/eta_sweep_pareto.pdf",
-      "sha256": "eed467faabf683a8b6ec758a6890490e74136e86217e898d82b7235e4bccaf0a",
+      "sha256": "25ab823290f2ccf5524056dea89751014bc1fe413d0a197ab185a374c67f6012",
       "source_sha256": {
         "data/frozen/eta_sweep_pareto.json": "76ea5f40d19cd284a2c3be32eb4d5ba210781ca732cb1d52d8e9d885575761af"
       },

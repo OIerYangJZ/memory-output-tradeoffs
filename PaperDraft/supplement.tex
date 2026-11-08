@@ -133,9 +133,8 @@ record freezes its identifier, seed, generation parameters, serialized sizes,
 input certificate, and content hashes.  Compilers see the same target basis,
 hardware abstraction, timeout, memory cap, and certificate.
 
-The five W4 reference compilers are echo/pass-through, full aggregation,
-memory-capped hybrid, local Qiskit, and the authors' exact phase-table
-reference.  W5 then applies eight frozen configurations: native and unified
+The five W4 compilers are echo/pass-through, full aggregation, Qiskit
+optimization level~3, TKET PauliSimp, and PyZX full-reduce.  W5 then applies eight frozen configurations: native and unified
 forms of the authors reference, Qiskit level-three local optimization, TKET
 PauliSimp, and PyZX full-reduce.  Native-to-unified bridge deltas are measured
 before certificate comparison.  A semantic-capable external output is grouped

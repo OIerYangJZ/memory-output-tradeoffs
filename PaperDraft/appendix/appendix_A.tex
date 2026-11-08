@@ -52,7 +52,7 @@ computes the same aggregate diagonal action without storing all $r$ lowered
 occurrences separately.
 \end{definition}
 
-\begin{proposition}[Operational recovery channels]
+\begin{remark}[Operational recovery channels]
 \label{prop:classification-boundary}
 For the Fourier-layer family, a pipeline that recovers the constant
 fixed-width output can be classified by the channel through which it carries
@@ -71,16 +71,14 @@ Consequently, a successful future flat-looking implementation would not by
 itself refute the main theorem. It would instead classify the implementation by
 identifying where the aggregate information crosses the finite-state boundary,
 or by showing that the formal transducer model is missing a cheaper channel.
-\end{proposition}
-
-\begin{proof}[Justification]
 The fixed-width theorem lower-bounds final output length for constant-budget
 finite-window transducers on a certified noncolliding family. A pipeline that
 achieves the semantic constant output must still represent the aggregate
 coefficients that distinguish the noncolliding cases. The listed channels are
 implementation-level ways to carry that information. This is a classification
-statement rather than an optimality claim.
-\end{proof}
+statement rather than an optimality claim, and the list is not exhaustive.
+\end{remark}
+
 
 \subsection*{Additional Structural Families}
 
@@ -173,7 +171,7 @@ In particular,
 Thus no smaller positive power of $D$ is a global phase, and
 $T=131040$ exactly.  It follows that
 $D^1,\ldots,D^R$ are pairwise distinct up to global phase for every
-$R<T$.
+$R\leq T$, since $D^i\simeq D^j$ requires $T\mid j-i$.
 
 The machine certificate uses only Python \texttt{fractions.Fraction} and
 prints all 16 relative numerators, denominators, and orders.  The frozen
@@ -221,10 +219,10 @@ results.
 Persistent store can depend on $r$, so the induction tracks both a store value
 and a tape word. In this subsection, $D$ in pumpability data denotes a period
 modulus, not the diagonal witness layer in $C_r=H_\Lambda D^rH_\Lambda^{-1}$.
-The next definition restates the main-text pumpable-pair definition with
-explicit residue data for the full proof.
+The transducer model is the one of \cref{rem:encoding-regimes}.  The next
+definition records pumpability with explicit residue data.
 
-\begin{definition}[Pumpable pair family, restated with explicit residue data]
+\begin{definition}[Pumpable pair family]
 \label{app:def:pumpable}
 Let $\Gamma$ be a finite alphabet and $P$ a finite set of store values. A family
 \[
@@ -260,9 +258,10 @@ Take $A_0=\Pi$, $B_0=M$, and $C_0=\Sigma$.
 \subsubsection{One-Pass Propagation}
 
 Fix a precision bound $q$ and a charged alphabet $\Gamma=\Gamma_B(q)$. Under
-this bound, a pass of $\mathcal{A}$ can be viewed as an ordinary deterministic
-subsequential transducer over a finite alphabet. Its finite state consists of
-the ephemeral state, the persistent store, and the $w$-token window. The
+this bound, a pass of $\mathcal{A}$ is an ordinary deterministic
+subsequential transducer over a finite alphabet whose transitions do not
+read head positions (\cref{rem:encoding-regimes}). Its finite state consists
+of the ephemeral state, the persistent store, and the $w$-token window. The
 end-of-pass persistent store is one component of the final finite state.
 
 \begin{lemma}[One-pass pumpability propagation]
@@ -571,7 +570,7 @@ compiler emits final outputs $T_p(r)$. Then
 The same inequality holds for a fixed family-relative code when one public
 dictionary is shared by the whole range.  For the rational-angle CP witness,
 only the displayed per-range inequality is claimed on fixed ranges
-$R<T=131040$.
+$R\leq T=131040$.
 \end{corollary}
 
 \begin{proof}
@@ -597,7 +596,8 @@ than an uncharged reconstruction channel.
 
 \begin{lemma}[Restart from the serialized cut]
 \label{app:lem:reconstruction}
-Fix $\mathcal A$ as in \cref{def:compiler}.  At the inter-round cut
+Fix $\mathcal A$ as in \cref{def:compiler}, receiving the masked-share
+stream once (\cref{thm:main-tradeoff}).  At the inter-round cut
 $c_{\mathrm{MS}}$, the five fields in \eqref{eq:info-budget}, together
 with any prefix already committed to the final write-once output, determine
 the continuation of that run for every supplied second-round continuation
@@ -618,5 +618,7 @@ the serialized random tape, the receiver can append the supplied second
 round and execute the same dynamically chosen continuation.  The separately
 transmitted final-output prefix is prepended to the suffix produced after
 restart.  No additional state, old-input file, or public-family side channel
-is used.
+is used.  The single-delivery hypothesis is needed: if the source
+re-delivered the stream for a later pass, the continuation would reread the
+first round, which the receiver does not hold.
 \end{proof}

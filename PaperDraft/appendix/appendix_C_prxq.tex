@@ -31,7 +31,7 @@ Requested & Actual & semantic UCC & \texttt{qiskit opt3} & PyZX \texttt{full\_re
 \caption{Uniform-600\,s comparison on the rational CP finite-range
 witness. Completed cells report gates/depth/cx; other entries are status
 outcomes and are not scored as structural wins. The family is certified
-only for $R < T = 131040$, with per-transducer tail constants. No
+only for $R \leq T = 131040$, with per-transducer tail constants. No
 external row is a formal theorem instance.}
 \label{tab:rational-cp-600}
 \end{table*}
@@ -210,9 +210,11 @@ the irrational witness
 & completed public baseline; growing output is not an impossibility result \\
 TKET GuidedPauliSimp
 & direct Qiskit--TKET bridge to GuidedPauliSimp
-& completed 5/5 on each witness; grows from $13{,}574$ to $339{,}974$ gates on
-the rational witness and from $8{,}786$ to $219{,}986$ on the irrational witness
-& successful pipeline, but not bounded \\
+& completed 5/5 on each witness; returns $13{,}574$ to $339{,}974$ gates on
+the rational witness, exactly the gate count of its lowered input, and
+$8{,}786$ to $219{,}986$ on the irrational witness
+& no optimization on flat input: the pass acts only inside \texttt{CircBox}
+regions \\
 artifact UCC (Fourier-layer IR disabled)
 & same artifact with Fourier-layer semantic path disabled
 & in ablation/resource runs, completes at $4$k, $10$k, and $20$k with $9{,}588$, $23{,}988$, and $47{,}988$ gates; times out at $50$k and $100$k

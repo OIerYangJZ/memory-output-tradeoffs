@@ -9,9 +9,11 @@
 % direct coordinate control.
 %
 % Scope discipline (see rem:round-contiguity, rem:dispersal in main.tex):
-% the QAOA block is the in-scope example (contiguous rounds AND free per-round
-% coefficients); the QPE ladder is drawn as the CONTRAST -- contiguous but
-% coefficient-degenerate.  Neither is claimed as a theorem instance beyond
+% the multi-angle QAOA block is the in-scope example (contiguous rounds AND
+% free per-round, per-edge coefficients; a standard single-gamma QAOA layer is
+% NOT, since every round rescales one weight vector); the QPE ladder is drawn
+% as the CONTRAST -- contiguous but coefficient-degenerate.  The bounds count
+% F2-independent edge characters (|V|-1 for a connected graph).  Neither is claimed as a theorem instance beyond
 % what those remarks establish.
 \documentclass[tikz,border=1pt]{standalone}
 \usepackage{newtxtext,newtxmath}
@@ -43,14 +45,14 @@
 
 % ============================ PANEL (a) ============================
 \node[panel,anchor=west] at (0,3.00)
-  {(a) One QAOA cost layer, as a downstream compiler sees it};
+  {(a) One multi-angle QAOA cost layer, as a downstream compiler sees it};
 
 % ---- semantic row ----
 \node[note,anchor=west] at (0,2.48) {semantic};
 \node[draw=black!60,line width=0.4pt,rounded corners=1pt,fill=white,
       inner sep=2.4pt,anchor=west,font=\scriptsize] at (1.15,2.48)
-      {$e^{-i\gamma C}$,\; $C=\textstyle\sum_{j\le m} w_j Z_{u_j}Z_{v_j}$};
-\node[note,anchor=west] at (4.70,2.48) {$m$ records $(Z_{u_j}Z_{v_j},\,\gamma w_j)$};
+      {$\exp\bigl(-i\textstyle\sum_{j} \gamma_j Z_{u_j}Z_{v_j}\bigr)$};
+\node[note,anchor=west] at (4.70,2.48) {one record $(Z_{u_j}Z_{v_j},\,\gamma_j)$ per edge};
 \node[note,anchor=west] at (4.70,2.16) {one $R_{ZZ}$ per edge};
 
 % ---- lowering arrow ----
@@ -97,7 +99,7 @@
 
 \node[note,anchor=north west,text width=8.1cm,align=left] at (0.02,-0.66)
   {\textcolor{accent}{\textbf{dispersed:}} $rm$ records reach the compiler.
-   No record, and no proper prefix, determines the edge total
+   No record, and no prefix before the last round, determines the edge total
    $x_j=\sum_{t}s^{(t)}_j a^{(t)}_j \bmod Q$.};
 
 % ---- contrast strip: the QPE ladder ----
@@ -136,13 +138,13 @@
 % commit callout (below the stream)
 \draw[-{Stealth[length=3.5pt]},line width=0.6pt,warn] (4.10,-4.12) -- (4.10,-4.48);
 \node[callout,draw=warn,text=warn,anchor=north] at (4.10,-4.52)
-      {commit now: correction rotations $\Rightarrow$ magic states};
+      {commit now: $A_p$ bits of output written before the cut};
 
 % the frontier, and the toll
 \node[anchor=north,font=\scriptsize] at (4.10,-5.00)
-  {$\overline A_p+(2p-1)\,S\;\ge\;(1-\delta)\,m\log_2 K_\epsilon-h_2(\delta)$};
+  {$\overline A_p+p\,S\;\ge\;(1-\delta)\,m\log_2 K_\epsilon-h_2(\delta)-\lceil\log_2(p+1)\rceil$};
 \node[note,anchor=north] at (4.10,-5.34)
-  {plus a $\log_2\binom{m}{k}$ toll when the commitment schedule is private};
+  {plus a record-level $\log_2\binom{m}{k}$ toll for executed (not buffered) commitment of a random mask};
 
 \end{tikzpicture}
 \end{document}

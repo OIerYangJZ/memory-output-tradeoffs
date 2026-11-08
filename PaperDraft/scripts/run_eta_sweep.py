@@ -15,8 +15,14 @@ output; no Python object is free state):
   * deferred  -- compact output; pays the cut in STATE: retains one trit
                  (first share) and one sign bit per twirled generator.
                  Predicted crossing slope: m*(log2 3 + 1)/8 bytes per
-                 unit eta (residue trits + frame bits, the zero-error
-                 floor of thm:w1-one-pass-mask + eq:frame-lower).
+                 unit eta, the storage cost of this serializer (one trit
+                 plus one separately stored sign bit).  This is not a
+                 lower bound: the target depends on the sign only through
+                 the signed residue, and the proven zero-error one-pass
+                 floor is m*log2(3)/8 bytes per unit eta
+                 (thm:w1-one-pass-mask on the dispersed coordinates).
+                 The frozen JSON keeps the historical key name
+                 "deferred_slope_bytes_per_eta_predicted_floor".
   * streaming -- commits first-round share records immediately; pays the
                  cut in COMMITTED OUTPUT: A_pre grows linearly in eta,
                  crossing state stays O(log m).
@@ -351,7 +357,8 @@ def figure(rows: list[dict[str, object]],
     axes[0].legend(frameon=False, fontsize=7, loc="upper left")
     fig.text(
         0.5, -0.04,
-        "dashed: zero-error floor $\\eta m(\\log_2 3 + 1)/8$ bytes",
+        "dashed: serializer storage cost $\\eta m(\\log_2 3 + 1)/8$ bytes "
+        "(trit + sign); proven floor is $\\eta m\\log_2 3/8$",
         ha="center", fontsize=7,
     )
     fig.tight_layout()
