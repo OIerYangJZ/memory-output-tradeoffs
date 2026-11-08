@@ -1,119 +1,104 @@
-\subsection{Dispersed additive-update representation}
-\label{sec:w1-dispersed}
-
-\begin{definition}[$r$-round dispersed update stream]
+\begin{definition}[$r$-round dispersed stream]
 \label{def:w1-dispersed-stream}
-The cyclic specialization of \cref{def:phase-family} with modulus
-$Q\geq3$, aggregate alphabet $[K]_0$ with $2\leq K\leq Q$ (the tuned
-families use the full alphabet $K=Q$), $\Delta=2\pi/Q$, $r\geq2$ rounds,
-and $\Sigma=\{+1\}$: for $x\in[K]_0^m$ the shares
-$a^{(1)},\ldots,a^{(r)}\in\mathbb Z_Q^m$ satisfy
+Fix $\mathbb F_2$-independent Pauli-$Z$ characters $P_1,\ldots,P_m$ on
+$n\geq m$ qubits, a modulus $Q\geq3$, the step $\Delta=2\pi/Q$, an
+aggregate alphabet $[K]_0=\{0,\ldots,K-1\}$ with $2\leq K\leq Q$, and
+$r\geq2$ rounds.  For $x\in[K]_0^m$, shares
+$a^{(1)},\ldots,a^{(r)}\in\mathbb Z_Q^m$ are valid if
 \begin{equation}
  \sum_{t=1}^r a_j^{(t)}=x_j\pmod Q
- \qquad(j\in[m]),
+ \qquad(j\in[m]).
  \label{eq:w1-share-sum}
 \end{equation}
-the flat input is the round-major record sequence
-$\mathsf{Update}(t,j,a_j^{(t)})$, and the semantic input is the addressed
-aggregate vector $x$.
+The \emph{flat input} is the round-major record sequence
+$\mathsf{Update}(t,j,a_j^{(t)})$, which implements
+$W=\prod_{t}\prod_{j}R_{P_j}(\Delta a_j^{(t)})$; the \emph{semantic
+input} is the addressed aggregate vector $x$, which specifies
+$U_x=\prod_jR_{P_j}(\Delta x_j)$.
 \end{definition}
 
 \begin{proposition}[Semantic equivalence and token privacy]
 \label{prop:w1-stream-equivalence}
-Every valid flat stream of \cref{def:w1-dispersed-stream} implements the
-same $U_x$ as the semantic input, up to global phase.  Moreover, a single
-flat token never determines $x_j$: for every fixed $(t,j,a)$ and every
-$b\in[K]_0$, there is a valid stream with $a_j^{(t)}=a$ and $x_j=b$.
-Under the canonical sharing distribution in which the first $r-1$ shares
-are independent uniform residues and the last is fixed by
+\label{prop:family-aggregates}
+Every valid flat stream implements $U_x$ up to global phase.  No single
+record determines $x_j$: for every fixed $(t,j,a)$ and every $b\in[K]_0$
+there is a valid stream with $a_j^{(t)}=a$ and $x_j=b$.  Under the
+canonical sharing distribution, in which the first $r-1$ shares are
+independent and uniform and the last is fixed by
 \eqref{eq:w1-share-sum}, every individual residue is uniform on
 $\mathbb Z_Q$ and independent of $x_j$.
 \end{proposition}
 
 \begin{proof}
-For integer representatives there are $k_j\in\mathbb Z$ with
-$\sum_ta_j^{(t)}=x_j+Qk_j$.  Commutativity and $Q\Delta=2\pi$ give
-\begin{equation*}
- \prod_tR_{P_j}(\Delta a_j^{(t)})
- =R_{P_j}(\Delta x_j+2\pi k_j)
- =(-1)^{k_j}R_{P_j}(\Delta x_j).
-\end{equation*}
-The product of the signs is global.  For privacy, fix the named token and
-choose any one of the other $r-1$ residues to enforce the desired sum;
-the remaining residues are arbitrary.  The distributional claim follows
-because a sum containing at least one independent uniform residue is
-uniform, including the last share after conditioning on $x_j$.
+Write $\sum_ta_j^{(t)}=x_j+Qk_j$ with $k_j\in\mathbb Z$.  The $P_j$
+commute and $Q\Delta=2\pi$, so
+$\prod_tR_{P_j}(\Delta a_j^{(t)})=(-1)^{k_j}R_{P_j}(\Delta x_j)$, and the
+signs multiply to a global phase.  For privacy, choose any one of the other
+$r-1$ residues to enforce the desired sum.  A sum that contains an
+independent uniform residue is uniform, which gives the distributional
+claim.
 \end{proof}
 
-\begin{definition}[Forward-pass cut accounting]
-\label{def:w1-pass-accounting}
-Partition the round-major stream into Alice's prefix $A$ (rounds
-$1,\ldots,r-1$) and Bob's suffix $B$ (round $r$).  A forward $p$-pass
-compiler scans $AB$ from left to right at most $p=p(m)$ times, so a run
-makes at most $p$ forward crossings $A\to B$ and at most $p-1$ rewind
-crossings $B\to A$; crossings that do not occur contribute zero below.
-Each new pass is delivered by the input source from the start of the
-stream, as in the standard multipass streaming model; that re-delivery is
-accounted for by the pass count and the rewind crossing, not as stored
-state.  At every crossing, the complete restart state is the five-field
-serialization of \eqref{eq:info-budget}; any copy of the input that the
-compiler itself retains, and every live IR object, are therefore
-included.  For a run on $I$, let $A_p(I)$ be the
-number of bits
-irreversibly committed to the final output while the machine scans $A$,
-summed over all passes, and define
+A compiler $\mathcal A$ is \emph{charged} as follows.  It may use
+random-access RAM, stacks, hash tables, caches, graph or DAG
+intermediate representations, and a random tape, and it may choose its
+number of passes dynamically.  Its final output is write-once and is a
+codeword of a fixed prefix-free code.  At every execution cut $c$ we
+serialize a complete restart snapshot in five disjoint, self-delimiting
+fields: control (pass and finite-control state, heads, emitted-prefix
+lengths, random tape and cursor), store (RAM, stacks, hash tables, caches,
+including computed integer data such as partial sums at their literal bit
+length), window (live input tokens), parameter (every live formal angle
+parameter), and IR (every other live intermediate object, including any
+retained copy of consumed input).  The charged budget is the total literal
+length
 \begin{equation}
-\begin{aligned}
- \Sigma^{\to}_p(I)&:=\sum_{t=1}^{p}B_{\mathrm{cut}}(c_{A\to B,t}),\\
- \Sigma_p(I)&:=\Sigma^{\to}_p(I)
-       +\sum_{t=1}^{p-1}B_{\mathrm{cut}}(c_{B\to A,t}).
-\end{aligned}
- \label{eq:w1-transcript-budget}
+\label{eq:info-budget}
+ B_{\mathrm{cut}}(c)=B_{\mathrm{control}}+B_{\mathrm{store}}
+ +B_{\mathrm{window}}+B_{\mathrm{parameter}}+B_{\mathrm{IR}}.
 \end{equation}
-Both are literal transcript lengths; the five-field serialization is
-self-delimiting, and its control field records the emitted-prefix
-length.  Unbarred resource
-symbols take maxima over valid inputs.  For randomized compilers, write
-\begin{equation*}
- \overline A_p:=\max_I\mathbb E_\rho A_p(I,\rho),\qquad
- \overline\Sigma^{(\to)}_p:=\max_I\mathbb E_\rho\Sigma^{(\to)}_p(I,\rho),
-\end{equation*}
-and let
+Rebuilding a global phase table, ZX graph, or Pauli network is therefore
+allowed but paid for.  Records and parameters are serialized by a fixed
+self-delimiting codec, so an address on $n$ qubits costs
+$\Theta(\log n)$ bits; the lower bounds below hold for every
+self-delimiting serialization whose control field records the
+emitted-prefix length, and only the additive terms of the upper bounds
+depend on the codec.  The codec and the field-by-field implementation are
+specified in the Supplemental Material~\cite{supplement}.
+
+\begin{definition}[Forward-pass accounting]
+\label{def:w1-pass-accounting}
+Split the round-major stream into Alice's prefix $A$ (rounds
+$1,\ldots,r-1$) and Bob's suffix $B$ (round $r$).  A forward $p$-pass
+compiler scans $AB$ from left to right at most $p=p(m)$ times; each new
+pass is re-delivered by the source from the start of the stream, as in
+standard multipass streaming.  A run therefore makes at most $p$ forward
+crossings $A\to B$ and at most $p-1$ rewind crossings $B\to A$.  For a run
+on input $I$, let $A_p(I)$ be the number of output bits committed while
+the machine scans $A$, summed over passes, and let
+$\Sigma^{\to}_p(I):=\sum_{t\leq p}B_{\mathrm{cut}}(c_{A\to B,t})$ be the
+total snapshot length at the forward crossings.  For randomized
+compilers, $\overline A_p:=\max_I\mathbb E_\rho A_p(I,\rho)$,
+$\overline\Sigma^{\to}_p:=\max_I\mathbb E_\rho\Sigma^{\to}_p(I,\rho)$,
+and the crossing cap is
 $S:=\max_I\mathbb E_\rho[\max_cB_{\mathrm{cut}}(c;I,\rho)]$ over the
-$2p-1$ named crossings.  Then
-$\overline\Sigma^{\to}_p\leq pS$ and $\overline\Sigma_p\leq(2p-1)S$;
-the deterministic version is identical without expectations.
+$2p-1$ crossings, so that $\overline\Sigma^{\to}_p\leq pS$.  Unbarred
+symbols denote maxima over valid inputs.
 \end{definition}
 
-\begin{theorem}[One-pass zero-error mask bound]
-\label{thm:w1-one-pass-mask}
-Let a deterministic one-pass compiler be correct to
-$\epsilon<\sin(\pi/(2Q))$ on every valid stream of
-\cref{def:w1-dispersed-stream} with $K\in\{Q-1,Q\}$.  Then
-\begin{equation}
- A_1+B_{\mathrm{cut}}(c_{A\to B,1})
- \geq\left\lceil m\log_2Q\right\rceil.
- \label{eq:w1-one-pass-mask}
-\end{equation}
-\end{theorem}
-
-\begin{proof}
-For each $u\in\mathbb Z_Q^m$, choose a canonical prefix whose aggregate
-is $u$ (put $u$ in its first round and zero in the other prefix rounds).
-The committed prefix and restart state after this prefix must distinguish
-all $Q^m$ choices.  Indeed, for $u\neq u'$, choose one common final share
-$v$ coordinatewise.  For $K=Q$ take $v=0$.  For $K=Q-1$, at each
-coordinate at most two residues of $v_j$ would make $u_j+v_j$ or
-$u'_j+v_j$ equal to the single excluded aggregate $Q-1$; since $Q\geq3$,
-an allowed $v_j$ exists.  Both completions are valid, and their
-aggregates differ in every coordinate in which $u$ and $u'$ differ.
-By \cref{thm:w1-exact-separation}, one circuit cannot be within
-$\epsilon$ of both targets, while a deterministic one-pass suffix
-computation is a function of the snapshot and the suffix.  A run that halted inside the prefix would give the same output for two
-completions with different targets, so every run reaches the crossing.
-Hence the map $u\mapsto\mathsf{ser}(\mathsf s_u)\cdot O_A(u)$, the
-five-field snapshot followed by the committed prefix, is injective.  The snapshot
-serialization is self-delimiting and its control field records the
-emitted-prefix length, so these messages form a prefix-free set, and
-Kraft's inequality gives \eqref{eq:w1-one-pass-mask}.
-\end{proof}
+\begin{definition}[Output measures]
+\label{def:info-budget-bits}
+The self-contained code $E_{\mathrm{self}}$ serializes a target-basis
+circuit with all opcodes, addresses, delimiters, and parameters.  Given
+the public dictionary $\mathcal F_m=(m,P_1,\ldots,P_m,K,\Delta)$, the
+family-relative code $E_{\mathrm{rel}}(\cdot\mid\mathcal F_m)$ may
+instead write the aggregate digits packed in base $K$ (aggregate mode),
+complete target-basis records (literal mode), or, under a header that
+declares a public schedule, residues packed in base $Q$ without addresses
+(ordered-share and $p$-block hybrid modes); the modes are specified in
+Appendix~\ref{app:proofs}.  We write $B_{\mathrm{rel}}$ and $B_{\mathrm{self}}$
+for the code lengths of an output, and $B^{\mathrm{out}}$ and
+$\overline B^{\mathrm{out}}$ for their worst-input value and worst-input
+expectation.  Description bits, self-contained bits, and gate counts are
+bounded separately and never converted into one another.
+\end{definition}

@@ -1,7 +1,5 @@
-\subsection{Randomized multipass frontier}
-\label{sec:w1-randomized-multipass}
-
-Put
+We now bound what a charged compiler must spend on the streams of
+\cref{def:w1-dispersed-stream} and show that the bounds are attained.  Put
 \begin{equation}
  L_\delta(m,K):=(1-\delta)m\log_2K-h_2(\delta),
  \qquad 0\leq\delta<\tfrac12.
@@ -36,9 +34,8 @@ In particular, for the worst-input expected crossing cap $S$ of
  \label{eq:w1-frontier-box}
 \end{equation}
 and \emph{a fortiori} $\overline A_p+(2p-1)S$ obeys the same bound.
-Here $S$ includes RAM, parameters, cache/hash metadata, materialized input,
-and all IR fields from \eqref{eq:info-budget}; it is not a RAM-only bound.
-For the tuned choice of \cref{cor:w1-epsilon-cyclic}, both right-hand sides
+$S$ includes every field of \eqref{eq:info-budget}; it is not a RAM-only
+bound.  For the tuned choice of \cref{cor:w1-epsilon-cyclic}, both right-hand sides
 are $\Omega((1-\delta)m\log(1/\epsilon))$ for fixed
 $\delta<1/2$ and $p=2^{o(m)}$.
 \end{theorem}
@@ -92,25 +89,68 @@ has expected maximum budget at most $S$, the boxed form follows.  The tuned
 consequence follows from \cref{cor:w1-epsilon-cyclic}.
 \end{proof}
 
-\begin{remark}[What is and is not optimal]
-\label{rem:w1-optimality-scope}
-Equation~\eqref{eq:w1-output-lower} is an output-information bound and
-\eqref{eq:w1-frontier-box} is a transcript bound; neither converts
-self-contained circuit bits into gates.  A forward scan alternates $2p-1$
-times between the earlier rounds and the last one, as in the standard
-simulation of $p$ passes by a $(2p-1)$-message protocol, but only the $p$
-messages into the last round carry information about the earlier rounds:
-each rewind snapshot is a function of the preceding forward snapshot and of
-the last round.  This is why the bound charges $p$ crossings and not
-$2p-1$.  A random-access input oracle, uncharged rereading outside the
-counted forward passes, or reverse scans would be a different model;
-re-delivery of the whole stream at the start of each counted pass is part
-of this one (\cref{def:w1-pass-accounting}).  For $p=1$ and a
-deterministic zero-error compiler,
-\cref{thm:w1-one-pass-mask} gives the integer form
-$A_1+B_{\mathrm{cut}}\geq\lceil m\log_2Q\rceil$ for $K\in\{Q-1,Q\}$,
-which for $K=Q-1$ is slightly stronger than $m\log_2K$.  For the full
-alphabet $K=Q$ the constructions of \cref{sec:w1-upper} attain
-\eqref{eq:w1-pass-lower} and \eqref{eq:w1-frontier-box} at $\delta=0$ to
-leading order.
-\end{remark}
+Only the $p$ forward crossings enter: of the $2p-1$ alternations that $p$
+forward scans make, as in the standard simulation of $p$ passes by a
+$(2p-1)$-message protocol~\cite{alon1999space,guha2008tight}, each rewind
+snapshot is a function of the preceding forward snapshot and of the last
+round.  A random-access input oracle, uncharged rereading outside the
+counted passes, and reverse scans are different models.  Neither
+\eqref{eq:w1-output-lower} nor \eqref{eq:w1-frontier-box} converts
+self-contained bits into gates.  For one pass and zero error the bound
+has an integer form, and a compact output forces the whole of it into the
+state:
+
+\begin{theorem}[One-pass zero-error bound]
+\label{thm:w1-one-pass-mask}
+\label{thm:main-tradeoff}
+Let a deterministic one-pass compiler be correct to
+$\epsilon<\sin(\pi/(2Q))$ on every valid stream of
+\cref{def:w1-dispersed-stream} with $K\in\{Q-1,Q\}$.  Then
+\begin{equation}
+ A_1+B_{\mathrm{cut}}(c_{A\to B,1})
+ \geq\left\lceil m\log_2Q\right\rceil.
+ \label{eq:w1-one-pass-mask}
+\end{equation}
+If, moreover, the compiler writes its output in the family-relative code
+$E_{\mathrm{rel}}$ and every final output satisfies
+$B_{\mathrm{rel}}\leq m\log_2K+\kappa\log_2(m+2)$ for a constant
+$\kappa$, then
+\begin{equation}
+ B_{\mathrm{cut}}(c_{A\to B,1})
+ \geq\left\lceil m\log_2Q\right\rceil-\kappa\log_2(m+2).
+ \label{eq:compact-cut-floor}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+For each $u\in\mathbb Z_Q^m$, take the canonical prefix with aggregate
+$u$ ($u$ in the first round, zero in the other prefix rounds).  For
+$u\neq u'$ choose one common final share $v$: $v=0$ if $K=Q$; if $K=Q-1$,
+at each coordinate at most two values of $v_j$ make $u_j+v_j$ or
+$u'_j+v_j$ equal to the excluded aggregate $Q-1$, and $Q\geq3$ leaves an
+allowed one.  Both completions are valid and their aggregates differ
+wherever $u$ and $u'$ differ, so by \cref{thm:w1-exact-separation} no
+circuit is within $\epsilon$ of both targets.  The suffix computation is
+a function of the snapshot and the suffix, and a run that halted inside
+the prefix would give one output for two different targets, so every run
+reaches the crossing and the map $u\mapsto\mathsf s_u\cdot O_A(u)$, the
+snapshot followed by the committed prefix, is injective.  The snapshot is
+self-delimiting and records the length of the committed prefix, so these
+messages form a prefix-free set, and Kraft's inequality gives
+\eqref{eq:w1-one-pass-mask}.  For \eqref{eq:compact-cut-floor}, fix any
+valid prefix, with aggregate $u$.  The $K^m$ final shares $v$ with
+$u+v\in[K]_0^m$ reach every aggregate, so they yield $K^m$ distinct
+codewords of $E_{\mathrm{rel}}$, all extending the committed prefix and of
+length at most $m\log_2K+\kappa\log_2(m+2)$.  Kraft's inequality applied
+to their suffixes bounds every committed prefix by $\kappa\log_2(m+2)$,
+and the injectivity argument above, applied to the canonical prefixes,
+then bounds the snapshot.
+\end{proof}
+
+For $Q=3$ and binary aggregates, \cref{thm:w1-one-pass-mask} is the
+two-round masked-share device executed in
+\cref{sec:physical-dispersed,sec:commitment}: a deferred compiler with
+compact output carries at least $\lceil m\log_23\rceil-O(\log m)$ bits
+across the cut, whereas a compiler given the aggregate vector copies its
+bits into aggregate mode, where base-2 blocks are exact, and so emits
+$m+O(\log m)$ output bits with $O(\log m)$ state.

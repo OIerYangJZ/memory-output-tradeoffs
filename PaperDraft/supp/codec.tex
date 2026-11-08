@@ -1,0 +1,218 @@
+\section{Record codec and cut accounting}
+\label{supp:codec}
+
+This section gives the field-level definitions behind the charged model of
+the main text.  Every lower bound there holds for any self-delimiting
+serialization whose control field records the emitted-prefix length; the
+definitions below fix the serialization used by the upper bounds and by
+the instrumented implementation.
+
+\begin{definition}[Sparse formal-parameter serialization]
+\label{def:parmodule}
+Fix formal angle symbols $\theta_1,\ldots,\theta_M$.  A parameter is stored
+in normalized sparse form
+\begin{equation*}
+\begin{gathered}
+ \lambda=\displaystyle\sum_{\ell=1}^{s}c_\ell\theta_{j_\ell}
+ +\dfrac{a}{d}\pi,\\
+ j_1<\cdots<j_s,\quad c_\ell,a\in\mathbb Z,\quad d\geq1,
+\end{gathered}
+\end{equation*}
+with zero coefficients omitted and $\gcd(a,d)=1$.  Let
+$\mathsf{u}(z)$ and $\mathsf{s}(z)$ be fixed self-delimiting codes for
+nonnegative and signed integers.  The executable parameter serialization is
+\begin{equation}
+\label{eq:precision-charge}
+\begin{aligned}
+ \mathsf{ser}_{\mathrm{par}}(\lambda)
+ &=\mathsf{u}(s)\prod_{\ell=1}^{s}
+   \bigl(\mathsf{u}(j_\ell)\mathsf{s}(c_\ell)\bigr)\\
+ &\quad\cdot\mathsf{s}(a)\mathsf{u}(d),\\
+ \pcharge(\lambda)&:=|\mathsf{ser}_{\mathrm{par}}(\lambda)|.
+\end{aligned}
+\end{equation}
+Thus one nonzero formal coefficient costs $O(\log M)$ rather than
+$\Omega(M)$ bits.  Qubit and generator locations are not part of this
+parameter payload; they are serialized by the complete-token codec below.
+\end{definition}
+
+\begin{definition}[Width-aware complete-token codec]
+\label{def:token-codec}
+Fix a self-delimiting integer code $\mathsf u$, a signed variant
+$\mathsf s$, a two-bit Pauli code $\mathsf p$, and a reserved record
+terminator $\mathsf d$.  A token $\tau$ with gate-type ID $g$, arity $r$,
+ordered operand qubits $q_1,\ldots,q_r$, sparse Pauli support
+$\{(z_\ell,\sigma_\ell)\}_{\ell=1}^{s}$, and $k$ parameter slots is encoded
+as
+\begin{equation*}
+\begin{aligned}
+\mathsf{ser}_{\mathrm{tok}}(\tau)
+={}&\mathsf u(g)\mathsf u(r)
+  \prod_{i=1}^{r}\mathsf u(q_i)\;\mathsf u(s)
+  \prod_{\ell=1}^{s}
+    \bigl(\mathsf u(z_\ell)\mathsf p(\sigma_\ell)\bigr)\\
+ &\cdot\mathsf u(k)
+  \prod_{a=1}^{k}
+    \bigl(\mathsf u(\mathrm{id}_a)
+           \mathsf{ser}_{\mathrm{par}}(\lambda_a)\bigr)\mathsf d .
+\end{aligned}
+\end{equation*}
+The zero values of $r$, $s$, or $k$ are explicitly encoded, so the record is
+executable and uniquely parseable without out-of-band arity, support, or
+delimiter information.  Update, IR-node, and output records use the same
+field order, with an opcode specifying which fields are active.
+
+At growing width $n$, an arbitrary qubit or generator choice alone requires
+$\lceil\log_2 n\rceil$ bits in any injective codec; the concrete codec above
+uses $O(\log n)$ bits per listed address and $O(s\log n)$ bits for an
+$s$-sparse Pauli support.  Consequently there is no width-independent
+``structural cost per token''.  The literal bit strings
+$\mathsf{ser}_{\mathrm{tok}}$ are charged wherever a token is live or
+emitted.  Only when $n=n_0$ and a complete-token precision bound $q$ are
+both fixed is the token set $\Gamma_{B,n_0}^{\leq q}$ finite; the
+fixed-width exact-semantics statements abbreviate it as $\Gamma_B(q)$.
+\end{definition}
+
+\begin{definition}[Randomized dynamic-pass compiler and serialized cut budget]
+\label{supp:def:compiler}
+A compiler $\mathcal A$ may use random-access RAM, stacks, hash tables,
+caches, DAG/graph IRs, and intermediate tapes; it may also select a finite
+number $p=p(I,\rho)$ of scans or passes dynamically from the input $I$ and
+a finite random seed/tape $\rho$.  The external input is append-only on its
+first exposure; a new forward pass is re-delivered by the input source from
+the start of the stream and is accounted for by the pass count
+(\cref{def:w1-pass-accounting}).  Any other access to a consumed
+prefix---a copy kept for a later scan through a file, memory mapping,
+spool, or cache---is live compiler storage and is charged below.  The final output is write-once.
+At every execution cut $c$, serialize a complete restart snapshot in five
+disjoint fields:
+\begin{itemize}[leftmargin=1.5em]
+    \item $\mathsf{ser}_{\mathrm{control}}(c)$: format version, pass and
+    finite-control IDs, dynamic pass count and termination/scheduling state,
+    all input/output heads and emitted-prefix lengths, end flags, framing
+    lengths, and the random seed/tape with its cursor;
+    \item $\mathsf{ser}_{\mathrm{store}}(c)$: the persistent and ephemeral
+    RAM, stacks, hash-table keys, bucket layout, cache contents and metadata,
+    with parameter payloads and IR objects replaced by location tags;
+    \item $\mathsf{ser}_{\mathrm{window}}(c)$: the ordered live read-window
+    token structures, including the structural fields of
+    \cref{def:token-codec} but excluding parameter payloads;
+    \item $\mathsf{ser}_{\mathrm{parameter}}(c)$: the location-tagged
+    concatenation of every live parameter payload in control, store, window,
+    and IR, each encoded by \eqref{eq:precision-charge};
+    \item $\mathsf{ser}_{\mathrm{IR}}(c)$: every other live intermediate
+    tape/DAG/table object and every rereadable consumed-input block that can
+    affect future execution, serialized by node opcode, the structural
+    fields of \cref{def:token-codec}, edge endpoints, multiplicity, and
+    object boundaries, but with parameter payloads omitted.
+\end{itemize}
+The corresponding bit-level budget is
+\begin{equation}
+\label{supp:eq:info-budget}
+\boxed{
+\begin{aligned}
+B_{\mathrm{cut}}(c)
+&=B_{\mathrm{control}}(c)+B_{\mathrm{store}}(c)\\
+&\quad+B_{\mathrm{window}}(c)+B_{\mathrm{parameter}}(c)
+      +B_{\mathrm{IR}}(c).
+\end{aligned}}
+\end{equation}
+where each summand is the literal bit length of the named serialization.
+Parameter payloads are the formal angle parameters of live tokens and IR
+objects; raw integer data that a compiler computes and keeps, such as
+residues or partial sums held in a packed RAM word, belong to
+$\mathsf{ser}_{\mathrm{store}}$ and are charged at their literal bit
+length.  Every upper bound below uses this convention, and no lower bound
+depends on it, because the lower bounds apply to any self-delimiting
+serialization whose control field records the emitted-prefix length.
+For a fixed run, $B_{\mathrm{cut}}$ is the maximum over its cuts.  For
+randomized compilers we use the worst-input expected budget
+\begin{equation}
+\label{eq:expected-cut}
+ \overline B_{\mathrm{cut}}(\mathcal A,\mathcal I)
+ :=\max_{I\in\mathcal I}\mathbb E_\rho
+       \bigl[\max_c B_{\mathrm{cut}}(c;I,\rho)\bigr].
+\end{equation}
+No theorem below substitutes a single field, such as
+$\max_cB_{\mathrm{parameter}}(c)$ or $\max_cB_{\mathrm{IR}}(c)$, for the
+total $B_{\mathrm{cut}}$.  The final output is write-once, is a codeword of
+a fixed prefix-free output code, and is charged separately by the output
+codes below.
+\end{definition}
+
+\begin{remark}[Model scope and escape channels]
+\label{rem:escape-channels}
+Equation~\eqref{supp:eq:info-budget} charges all restart information, not only
+the finite-control state.  In particular, a ZX graph, phase-polynomial
+table, spilled update log, hash table, cache, random seed, or materialized
+intermediate tape is serialized in the indicated field; formal angle
+parameters are serialized in $B_{\mathrm{parameter}}$ and computed integer
+data in $B_{\mathrm{store}}$, so every coefficient is charged exactly
+once.  Internal rescanning of retained data is allowed,
+but the pass schedule, heads, and any retained copy of old input are part
+of the snapshot.  A pass re-delivered by the source is accounted by the
+pass count rather than by the snapshot, so a bound read off a single cut,
+such as \cref{thm:main-tradeoff}, requires the stream to be delivered
+once; the transcript bounds of \cref{sec:w1-unified-frontier} cover
+re-delivered passes.  The five fields are disjoint by construction, so parameter bits
+are not counted again as store, window, or IR structure.  A compiler may
+escape a RAM-only workspace lower bound by materializing a large IR, but it
+then pays the same bits in $B_{\mathrm{cut}}$.
+\end{remark}
+
+\begin{remark}[Physical scope of the bounded-memory streaming model]
+\label{rem:streaming-grounding}
+The charged streaming model of \cref{supp:def:compiler}---bounded live
+state, explicit pass accounting, append-only first exposure---is the
+operating regime of a real-time fault-tolerant control stack, not a
+convenience abstraction.  Between rounds, the classical electronics
+adjacent to the quantum device holds decoder state, Pauli-frame
+records, and instruction buffers under hard latency and buffer
+budgets: Pauli corrections can be tracked in a classical frame instead of
+being applied, which relaxes the timing constraints on syndrome
+measurement and decoding~\cite{riesebos2017pauli}, but they must be
+resolved before the next non-Clifford gate~\cite{knill2005realistically},
+and surface-code compilers are built as streaming pipelines that target
+real-time operation~\cite{watkins2024surfacecode}.  Distributed
+and modular architectures motivate the same scope from the
+interconnect side: a cross-module interaction splits the
+\emph{support} of a gate across modules while its coefficient stays
+within one module, so modularity bounds the state that crosses a
+partition without by itself dispersing any coefficient.  These
+architectures therefore ground the model's memory and pass
+constraints only; no claim is made that modular partitioning
+instantiates the dispersed streams of \cref{sec:physical-dispersed},
+whose instances come from scheduling and twirling alone.
+\end{remark}
+
+\input{../theory/model_implementation_mapping}
+
+\subsection{Restart from the serialized cut}
+
+\begin{lemma}[Restart from the serialized cut]
+\label{app:lem:reconstruction}
+Fix $\mathcal A$ as in \cref{supp:def:compiler}, receiving a stream of
+\cref{def:w1-dispersed-stream} once.  At the crossing $c_{A\to B}$ before
+the last round, the five fields in \eqref{supp:eq:info-budget}, together
+with any prefix already committed to the final write-once output, determine
+the continuation of that run for every supplied last round $v$.  For a randomized run this statement is conditional on the serialized
+seed/tape and cursor.
+\end{lemma}
+
+\begin{proof}
+The control field restores the exact transition, all head positions,
+dynamic pass/termination schedule, and random seed/tape cursor.  The store
+and window fields restore RAM, stack, hash/cache metadata, nonparameter
+machine data, and ordered live token structures.  The parameter field
+restores every omitted coefficient by its location tag.  The IR field
+restores every other live intermediate tape, DAG, table, addressed record,
+and any consumed input block retained for rescanning.  These disjoint fields
+therefore reconstruct the complete machine configuration.  Conditional on
+the serialized random tape, the receiver can append the supplied second
+round and execute the same dynamically chosen continuation.  The separately
+transmitted final-output prefix is prepended to the suffix produced after
+restart.  No additional state, old-input file, or public-family side channel
+is used.  The single-delivery hypothesis is needed: if the source
+re-delivered the stream for a later pass, the continuation would reread the
+first round, which the receiver does not hold.
+\end{proof}

@@ -1,0 +1,63 @@
+\section{Reproducibility}
+\label{supp:reproducibility}
+For scale, the headline campaigns comprise \TradeoffRuns\ traced
+reference-compiler runs; a \MatchedCells-cell matched-representation
+design and a separate \ExternalCells-cell external campaign containing
+TKET PauliSimp and PyZX full-reduce, with completed metrics accepted
+only when supported by the stated symbolic or dense certificate; \QRECells\
+complete fixed-total-error fault-tolerant estimates under a common
+algorithmic, synthesis, and logical-failure budget; and \NaturalCells\
+natural-workload and negative-control cells crossing a six-factor
+ablation, in which \NaturalStableFamilies\ structured families satisfy
+the predeclared all-size/all-seed criterion and the two negative
+controls show \NaturalNegativeRegressions\ systematic regressions.
+Explicitly labelled historical diagnostics retain their original
+artifact provenance.
+
+The canonical registry is \path{data/manifest.yaml}; the normalized schema is
+\path{schema/experiment.schema.json}.  Its complete key is
+\begin{center}
+\footnotesize\ttfamily
+experiment\_id, instance\_id, representation\_id,\\
+method\_id, seed, backend\_hash, tool\_version,\\
+artifact\_commit, config\_hash.
+\end{center}
+The normalized Parquet index contains \UnifiedRows\ unique records and retains
+\UnifiedPredicateErrors\ predicate-error rows outside quality means.  The data
+audit checks CSV/Parquet mirrors, conflicting numeric cells, duplicate TeX
+labels, source hashes, row counts, orphaned frozen files, and historical versus
+canonical campaign disposition.  It finds no duplicate primary keys,
+registered-file omissions, conflicting mirror cells, hash drift, or
+unregistered frozen artifacts among the committed canonical sources.
+
+All measurement macros, tables, and figures used by the W3--W9 sections are
+generated from registered frozen sources by
+\path{scripts/build_all_tables.py} and
+\path{scripts/build_all_figures.py}; the operation and unique source row for
+each printed number are recorded in \path{data/provenance_map.yaml} and tested
+by \path{tests/test_paper_number_provenance.py}.  The correctness language,
+symbolic checker, and mutation/dense audit are in \path{certificates/}; the
+QRE schemas and two physical profiles are in \path{qre/}.  The approximately
+700-MB raw W3--W8 run tree, including manifests, logs, certificates, seeds, and
+package records, is versioned in the separate private
+\path{OIerYangJZ/paper1-data} archive at the revision recorded in
+\path{data/manifest.yaml}; its absence is reported but does not invalidate the
+committed frozen-data rebuild.
+
+The one-command entry point is
+\path{reproducibility/run_submission.sh}.  From a fresh clone it creates the
+locked project environment when needed, reruns frozen-data audits, regenerates
+all registered tables and figures, executes the full test suite, builds the
+canonical, arXiv, Quantum-submission, and supplement PDFs, and rejects
+unresolved references.  This procedure reproduces the submitted analysis from
+immutable frozen datasets; it does not rerun the complete measurement
+campaigns.  The clean-room runner
+copies a minimal artifact to an independent temporary directory, creates a
+fresh environment bound to the locked project packages, reruns
+\CleanTheoryTests\ headline-theorem tests, compiles and densely certifies a
+matched QAOA/Ising instance through the authors and TKET paths, and exercises
+\CleanGridPairs\ deterministic synthesis pairs in a fixed-total-error QRE
+subset.  This is working-directory isolation, not a claim of host-binary
+independence.  Complete audit and limitation records are
+\path{DATA_AUDIT_REPORT.md}, \path{CLEAN_ROOM_REPORT.md},
+\path{QRE_REPORT.md}, and \path{NATURAL_WORKLOAD_REPORT.md}.

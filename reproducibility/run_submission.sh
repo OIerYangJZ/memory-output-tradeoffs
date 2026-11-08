@@ -33,7 +33,7 @@ PYTHON=.venv/bin/python
 
 (
   cd "$PAPER_DIR"
-  for source in main.tex main_arXiv.tex main_quantum.tex supplement.tex
+  for source in main.tex main_arXiv.tex main_quantum.tex main_prr.tex supplement.tex
   do
     latexmk -pdf -interaction=nonstopmode -halt-on-error "$source"
   done
@@ -41,7 +41,8 @@ PYTHON=.venv/bin/python
 
 if grep -En "undefined references|Citation.*undefined|Reference.*undefined|multiply defined" \
   "$PAPER_DIR/main.log" "$PAPER_DIR/main_arXiv.log" \
-  "$PAPER_DIR/main_quantum.log" "$PAPER_DIR/supplement.log"
+  "$PAPER_DIR/main_quantum.log" "$PAPER_DIR/main_prr.log" \
+  "$PAPER_DIR/supplement.log"
 then
   echo "submission build contains unresolved or duplicate references" >&2
   exit 1

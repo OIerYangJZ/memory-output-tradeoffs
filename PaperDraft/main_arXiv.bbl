@@ -154,12 +154,6 @@ Andrew Cross, Ali Javadi-Abhari, Thomas Alexander, Niel de~Beaudrap, Lev~S.
 \newblock \href{https://dx.doi.org/10.1145/3505636}{ACM Transactions on Quantum
   Computing {\bf 3}, 12}~(2022).
 
-\bibitem{nation2023suppressing}
-Paul~D. Nation and Matthew Treinish.
-\newblock ``Suppressing quantum circuit errors due to system variability''.
-\newblock \href{https://dx.doi.org/10.1103/PRXQuantum.4.010327}{PRX Quantum
-  {\bf 4}, 010327}~(2023).
-
 \bibitem{riesebos2017pauli}
 Leon Riesebos, Xiang Fu, Savvas Varsamopoulos, Carmen~G. Almudever, and Koen
   Bertels.
@@ -224,26 +218,17 @@ Joan Boyar, Lene~M. Favrholdt, Michal Kotrb{\v{c}}{\'\i}k, and Kim~S. Larsen.
 \newblock \href{https://dx.doi.org/10.1007/s00453-022-00944-w}{Algorithmica
   {\bf 84}, 1916--1951}~(2022).
 
-\bibitem{watrous2018theory}
-John Watrous.
-\newblock ``The theory of quantum information''.
-\newblock \href{https://dx.doi.org/10.1017/9781316848142}{Cambridge University
-  Press}. Cambridge~(2018).
+\bibitem{supplement}
+See Supplemental Material for the record codec and field-level cut accounting,
+  the certificate domain and its soundness proof, the exact-semantics results
+  for fixed-width circuits, the complete experimental protocols, matrices, and
+  negative results, and the data lineage.
 
 \bibitem{knill2005realistically}
 Emanuel Knill.
 \newblock ``Quantum computing with realistically noisy devices''.
 \newblock \href{https://dx.doi.org/10.1038/nature03350}{Nature {\bf 434},
   39--44}~(2005).
-
-\bibitem{watkins2024surfacecode}
-George Watkins, Hoang~Minh Nguyen, Keelan Watkins, Steven Pearce, Hoi-Kwan Lau,
-  and Alexandru Paler.
-\newblock ``A high performance compiler for very large scale surface code
-  computations''.
-\newblock \href{https://dx.doi.org/10.22331/q-2024-05-22-1354}{Quantum {\bf 8},
-  1354}~(2024).
-\newblock  \href{http://arxiv.org/abs/2302.02459}{arXiv:2302.02459}.
 
 \bibitem{amy2020staq}
 Matthew Amy and Vlad Gheorghiu.
@@ -288,21 +273,6 @@ Michael~E. Beverland, Prakash Murali, Matthias Troyer, Krysta~M. Svore, Torsten
   advantage''~(2022).
 \newblock  \href{http://arxiv.org/abs/2211.07629}{arXiv:2211.07629}.
 
-\bibitem{li2023qasmbench}
-Ang Li, Samuel Stein, Sriram Krishnamoorthy, and James Ang.
-\newblock ``{QASMBench}: A low-level quantum benchmark suite for {NISQ}
-  evaluation and simulation''.
-\newblock \href{https://dx.doi.org/10.1145/3550488}{ACM Transactions on Quantum
-  Computing {\bf 4}, 10}~(2023).
-
-\bibitem{quetschlich2023mqt}
-Nils Quetschlich, Lukas Burgholzer, and Robert Wille.
-\newblock ``{MQT Bench}: Benchmarking software and design automation tools for
-  quantum computing''.
-\newblock \href{https://dx.doi.org/10.22331/q-2023-07-20-1062}{Quantum {\bf 7},
-  1062}~(2023).
-\newblock  \href{http://arxiv.org/abs/2204.13719}{arXiv:2204.13719}.
-
 \bibitem{cowtan2019routing}
 Alexander Cowtan, Silas Dilkes, Ross Duncan, Alexandre Krajenbrink, Will
   Simmons, and Seyon Sivarajah.
@@ -322,12 +292,20 @@ Gushu Li, Yufei Ding, and Yuan Xie.
 \newblock \href{https://dx.doi.org/10.1145/3297858.3304023}{Pages 1001--1014}.
 \newblock ~(2019).
 
-\bibitem{javadi2024qiskit}
-Ali Javadi-Abhari, Matthew Treinish, Kevin Krsulich, Christopher~J. Wood, Jake
-  Lishman, Julien Gacon, Simon Martiel, Paul~D. Nation, Lev~S. Bishop,
-  Andrew~W. Cross, Blake~R. Johnson, and Jay~M. Gambetta.
-\newblock ``Quantum computing with {Qiskit}''~(2024).
-\newblock  \href{http://arxiv.org/abs/2405.08810}{arXiv:2405.08810}.
+\bibitem{li2023qasmbench}
+Ang Li, Samuel Stein, Sriram Krishnamoorthy, and James Ang.
+\newblock ``{QASMBench}: A low-level quantum benchmark suite for {NISQ}
+  evaluation and simulation''.
+\newblock \href{https://dx.doi.org/10.1145/3550488}{ACM Transactions on Quantum
+  Computing {\bf 4}, 10}~(2023).
+
+\bibitem{quetschlich2023mqt}
+Nils Quetschlich, Lukas Burgholzer, and Robert Wille.
+\newblock ``{MQT Bench}: Benchmarking software and design automation tools for
+  quantum computing''.
+\newblock \href{https://dx.doi.org/10.22331/q-2023-07-20-1062}{Quantum {\bf 7},
+  1062}~(2023).
+\newblock  \href{http://arxiv.org/abs/2204.13719}{arXiv:2204.13719}.
 
 \bibitem{sivarajah2021tket}
 Seyon Sivarajah, Silas Dilkes, Alexander Cowtan, Will Simmons, Alec Edgington,
@@ -335,6 +313,14 @@ Seyon Sivarajah, Silas Dilkes, Alexander Cowtan, Will Simmons, Alec Edgington,
 \newblock ``t{$|$}ket{$\rangle$}: A retargetable compiler for {NISQ} devices''.
 \newblock \href{https://dx.doi.org/10.1088/2058-9565/ab8e92}{Quantum Science
   and Technology {\bf 6}, 014003}~(2021).
+
+\bibitem{duncan2020graph}
+Ross Duncan, Aleks Kissinger, Simon Perdrix, and John van~de Wetering.
+\newblock ``Graph-theoretic simplification of quantum circuits with the
+  {ZX}-calculus''.
+\newblock \href{https://dx.doi.org/10.22331/q-2020-06-04-279}{Quantum {\bf 4},
+  279}~(2020).
+\newblock  \href{http://arxiv.org/abs/1902.03178}{arXiv:1902.03178}.
 
 \bibitem{kissinger2020pyzx}
 Aleks Kissinger and John van~de Wetering.
@@ -344,14 +330,6 @@ Aleks Kissinger and John van~de Wetering.
 \newblock \href{https://dx.doi.org/10.4204/EPTCS.318.14}{Volume 318 of
   Electronic Proceedings in Theoretical Computer Science, pages 229--241}.
 \newblock ~(2020).
-
-\bibitem{duncan2020graph}
-Ross Duncan, Aleks Kissinger, Simon Perdrix, and John van~de Wetering.
-\newblock ``Graph-theoretic simplification of quantum circuits with the
-  {ZX}-calculus''.
-\newblock \href{https://dx.doi.org/10.22331/q-2020-06-04-279}{Quantum {\bf 4},
-  279}~(2020).
-\newblock  \href{http://arxiv.org/abs/1902.03178}{arXiv:1902.03178}.
 
 \bibitem{beaudrap2020techniques}
 Niel de~Beaudrap, Xiaoning Bian, and Quanlong Wang.
@@ -410,6 +388,14 @@ Vlad Gheorghiu, Michele Mosca, and Priyanka Mukhopadhyay.
 \newblock \href{https://dx.doi.org/10.1038/s41534-022-00651-y}{npj Quantum
   Information {\bf 8}, 141}~(2022).
 
+\bibitem{babbush2021focus}
+Ryan Babbush, Jarrod~R. McClean, Michael Newman, Craig Gidney, Sergio Boixo,
+  and Hartmut Neven.
+\newblock ``Focus beyond quadratic speedups for error-corrected quantum
+  advantage''.
+\newblock \href{https://dx.doi.org/10.1103/PRXQuantum.2.010103}{PRX Quantum
+  {\bf 2}, 010103}~(2021).
+
 \bibitem{steiger2018projectq}
 Damian~S. Steiger, Thomas H{\"a}ner, and Matthias Troyer.
 \newblock ``{ProjectQ}: An open source software framework for quantum
@@ -418,35 +404,21 @@ Damian~S. Steiger, Thomas H{\"a}ner, and Matthias Troyer.
   49}~(2018).
 \newblock  \href{http://arxiv.org/abs/1612.08091}{arXiv:1612.08091}.
 
-\bibitem{martiel2022architecture}
-Simon Martiel and Timoth{\'e}e Goubault~de Brugi{\`e}re.
-\newblock ``Architecture aware compilation of quantum circuits via lazy
-  synthesis''.
-\newblock \href{https://dx.doi.org/10.22331/q-2022-06-07-729}{Quantum {\bf 6},
-  729}~(2022).
-\newblock  \href{http://arxiv.org/abs/2012.09663}{arXiv:2012.09663}.
+\bibitem{javadi2024qiskit}
+Ali Javadi-Abhari, Matthew Treinish, Kevin Krsulich, Christopher~J. Wood, Jake
+  Lishman, Julien Gacon, Simon Martiel, Paul~D. Nation, Lev~S. Bishop,
+  Andrew~W. Cross, Blake~R. Johnson, and Jay~M. Gambetta.
+\newblock ``Quantum computing with {Qiskit}''~(2024).
+\newblock  \href{http://arxiv.org/abs/2405.08810}{arXiv:2405.08810}.
 
-\bibitem{hietala2021verified}
-Kesha Hietala, Robert Rand, Shih-Han Hung, Xiaodi Wu, and Michael Hicks.
-\newblock ``A verified optimizer for quantum circuits''.
-\newblock \href{https://dx.doi.org/10.1145/3434318}{Proceedings of the ACM on
-  Programming Languages {\bf 5}, 37}~(2021).
-
-\bibitem{mills2021application}
-Daniel Mills, Seyon Sivarajah, Travis~L. Scholten, and Ross Duncan.
-\newblock ``Application-motivated, holistic benchmarking of a full quantum
-  computing stack''.
-\newblock \href{https://dx.doi.org/10.22331/q-2021-03-22-415}{Quantum {\bf 5},
-  415}~(2021).
-\newblock  \href{http://arxiv.org/abs/2006.01273}{arXiv:2006.01273}.
-
-\bibitem{fellous2023optimizing}
-Marco Fellous-Asiani, Jing~Hao Chai, Yvain Thonnart, Hui~Khoon Ng, Robert~S.
-  Whitney, and Alexia Auff{\`e}ves.
-\newblock ``Optimizing resource efficiencies for scalable full-stack quantum
-  computers''.
-\newblock \href{https://dx.doi.org/10.1103/PRXQuantum.4.040319}{PRX Quantum
-  {\bf 4}, 040319}~(2023).
+\bibitem{watkins2024surfacecode}
+George Watkins, Hoang~Minh Nguyen, Keelan Watkins, Steven Pearce, Hoi-Kwan Lau,
+  and Alexandru Paler.
+\newblock ``A high performance compiler for very large scale surface code
+  computations''.
+\newblock \href{https://dx.doi.org/10.22331/q-2024-05-22-1354}{Quantum {\bf 8},
+  1354}~(2024).
+\newblock  \href{http://arxiv.org/abs/2302.02459}{arXiv:2302.02459}.
 
 \bibitem{peduri2022qssa}
 Anurudh Peduri, Siddharth Bhat, and Tobias Grosser.
@@ -465,6 +437,14 @@ Alexander McCaskey and Thien Nguyen.
   255--264}.
 \newblock ~(2021).
 
+\bibitem{martiel2022architecture}
+Simon Martiel and Timoth{\'e}e Goubault~de Brugi{\`e}re.
+\newblock ``Architecture aware compilation of quantum circuits via lazy
+  synthesis''.
+\newblock \href{https://dx.doi.org/10.22331/q-2022-06-07-729}{Quantum {\bf 6},
+  729}~(2022).
+\newblock  \href{http://arxiv.org/abs/2012.09663}{arXiv:2012.09663}.
+
 \bibitem{kreppel2023shuttling}
 Fabian Kreppel, Christian Melzer, Diego Olvera~Mill{\'a}n, Janis Wagner, Janine
   Hilder, Ulrich Poschinger, Ferdinand Schmidt-Kaler, and Andr{\'e} Brinkmann.
@@ -481,25 +461,6 @@ Daniel~Bochen Tan, Dolev Bluvstein, Mikhail~D. Lukin, and Jason Cong.
 \newblock \href{https://dx.doi.org/10.22331/q-2024-03-14-1281}{Quantum {\bf 8},
   1281}~(2024).
 \newblock  \href{http://arxiv.org/abs/2306.03487}{arXiv:2306.03487}.
-
-\bibitem{tomesh2022supermarq}
-Teague Tomesh, Pranav Gokhale, Victory Omole, Gokul~Subramanian Ravi,
-  Kaitlin~N. Smith, Joshua Viszlai, Xin-Chuan Wu, Nikos Hardavellas,
-  Margaret~R. Martonosi, and Frederic~T. Chong.
-\newblock ``Supermarq: A scalable quantum benchmark suite''.
-\newblock In 2022 IEEE International Symposium on High-Performance Computer
-  Architecture (HPCA).
-\newblock \href{https://dx.doi.org/10.1109/HPCA53966.2022.00050}{Pages
-  587--603}.
-\newblock ~(2022).
-
-\bibitem{babbush2021focus}
-Ryan Babbush, Jarrod~R. McClean, Michael Newman, Craig Gidney, Sergio Boixo,
-  and Hartmut Neven.
-\newblock ``Focus beyond quadratic speedups for error-corrected quantum
-  advantage''.
-\newblock \href{https://dx.doi.org/10.1103/PRXQuantum.2.010103}{PRX Quantum
-  {\bf 2}, 010103}~(2021).
 
 \bibitem{cai2023mitigation}
 Zhenyu Cai, Ryan Babbush, Simon~C. Benjamin, Suguru Endo, William~J. Huggins,
@@ -521,19 +482,16 @@ Michael Sipser.
 \newblock Cengage Learning. ~(2012).
 \newblock 3 edition.
 
-\bibitem{alur2010streaming}
-Rajeev Alur and Pavol {\v{C}}ern{\'y}.
-\newblock ``Expressiveness of streaming string transducers''.
-\newblock In IARCS Annual Conference on Foundations of Software Technology and
-  Theoretical Computer Science (FSTTCS 2010).
-\newblock \href{https://dx.doi.org/10.4230/LIPIcs.FSTTCS.2010.1}{Volume~8 of
-  Leibniz International Proceedings in Informatics, pages 1--12}.
-\newblock ~(2010).
-
 \bibitem{munro1980selection}
 J.~Ian Munro and Michael~S. Paterson.
 \newblock ``Selection and sorting with limited storage''.
 \newblock \href{https://dx.doi.org/10.1016/0304-3975(80)90061-4}{Theoretical
   Computer Science {\bf 12}, 315--323}~(1980).
+
+\bibitem{watrous2018theory}
+John Watrous.
+\newblock ``The theory of quantum information''.
+\newblock \href{https://dx.doi.org/10.1017/9781316848142}{Cambridge University
+  Press}. Cambridge~(2018).
 
 \end{thebibliography}

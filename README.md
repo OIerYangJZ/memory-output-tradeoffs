@@ -17,9 +17,9 @@ distribution providing `latexmk`, then run from the repository root:
 On a fresh clone the command creates `.venv` from the committed `uv.lock`.
 It audits the committed frozen W3--W9 datasets, regenerates registered tables
 and figures, runs the full test suite and clean-room subset, and builds the
-canonical, arXiv, Quantum-submission, and supplement PDFs. The Physical
-Review Research submission version is built separately with
-`latexmk -pdf main_prr.tex` in `PaperDraft/`. The first run can
+canonical, arXiv, Quantum-submission, Physical Review Research, and
+supplement PDFs (the supplement resolves its references to the main text
+against the PRR build, so `main_prr.tex` is compiled first). The first run can
 require network access to populate uv's package cache; subsequent runs can use
 the locked local environment without network access.
 

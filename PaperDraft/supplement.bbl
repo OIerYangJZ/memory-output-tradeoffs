@@ -1,53 +1,60 @@
-%apsrev4-2.bst 2019-01-14 (MD) hand-edited version of apsrev4-1.bst
-%Control: key (0)
-%Control: author (8) initials jnrlst
-%Control: editor formatted (1) identically to author
-%Control: production of article title (0) allowed
-%Control: page (0) single
-%Control: year (1) truncated
-%Control: production of eprint (0) enabled
-\begin{thebibliography}{0}%
-\makeatletter
-\providecommand \@ifxundefined [1]{%
- \@ifx{#1\undefined}
-}%
-\providecommand \@ifnum [1]{%
- \ifnum #1\expandafter \@firstoftwo
- \else \expandafter \@secondoftwo
- \fi
-}%
-\providecommand \@ifx [1]{%
- \ifx #1\expandafter \@firstoftwo
- \else \expandafter \@secondoftwo
- \fi
-}%
-\providecommand \natexlab [1]{#1}%
-\providecommand \enquote  [1]{``#1''}%
-\providecommand \bibnamefont  [1]{#1}%
-\providecommand \bibfnamefont [1]{#1}%
-\providecommand \citenamefont [1]{#1}%
-\providecommand \href@noop [0]{\@secondoftwo}%
-\providecommand \href [0]{\begingroup \@sanitize@url \@href}%
-\providecommand \@href[1]{\@@startlink{#1}\@@href}%
-\providecommand \@@href[1]{\endgroup#1\@@endlink}%
-\providecommand \@sanitize@url [0]{\catcode `\\12\catcode `\$12\catcode
-  `\&12\catcode `\#12\catcode `\^12\catcode `\_12\catcode `\%12\relax}%
-\providecommand \@@startlink[1]{}%
-\providecommand \@@endlink[0]{}%
-\providecommand \url  [0]{\begingroup\@sanitize@url \@url }%
-\providecommand \@url [1]{\endgroup\@href {#1}{\urlprefix }}%
-\providecommand \urlprefix  [0]{URL }%
-\providecommand \Eprint [0]{\href }%
-\providecommand \doibase [0]{https://doi.org/}%
-\providecommand \selectlanguage [0]{\@gobble}%
-\providecommand \bibinfo  [0]{\@secondoftwo}%
-\providecommand \bibfield  [0]{\@secondoftwo}%
-\providecommand \translation [1]{[#1]}%
-\providecommand \BibitemOpen [0]{}%
-\providecommand \bibitemStop [0]{}%
-\providecommand \bibitemNoStop [0]{.\EOS\space}%
-\providecommand \EOS [0]{\spacefactor3000\relax}%
-\providecommand \BibitemShut  [1]{\csname bibitem#1\endcsname}%
-\let\auto@bib@innerbib\@empty
-%</preamble>
-\end{thebibliography}%
+\begin{thebibliography}{1}
+
+\bibitem{riesebos2017pauli}
+Leon Riesebos, Xiang Fu, Savvas Varsamopoulos, Carmen~G. Almudever, and Koen
+  Bertels.
+\newblock ``Pauli frames for quantum computer architectures''.
+\newblock In Proceedings of the 54th Annual Design Automation Conference (DAC
+  2017).
+\newblock \href{https://dx.doi.org/10.1145/3061639.3062300}{Pages 76:1--76:6}.
+\newblock ~(2017).
+
+\bibitem{knill2005realistically}
+Emanuel Knill.
+\newblock ``Quantum computing with realistically noisy devices''.
+\newblock \href{https://dx.doi.org/10.1038/nature03350}{Nature {\bf 434},
+  39--44}~(2005).
+
+\bibitem{watkins2024surfacecode}
+George Watkins, Hoang~Minh Nguyen, Keelan Watkins, Steven Pearce, Hoi-Kwan Lau,
+  and Alexandru Paler.
+\newblock ``A high performance compiler for very large scale surface code
+  computations''.
+\newblock \href{https://dx.doi.org/10.22331/q-2024-05-22-1354}{Quantum {\bf 8},
+  1354}~(2024).
+\newblock  \href{http://arxiv.org/abs/2302.02459}{arXiv:2302.02459}.
+
+\bibitem{javadi2024qiskit}
+Ali Javadi-Abhari, Matthew Treinish, Kevin Krsulich, Christopher~J. Wood, Jake
+  Lishman, Julien Gacon, Simon Martiel, Paul~D. Nation, Lev~S. Bishop,
+  Andrew~W. Cross, Blake~R. Johnson, and Jay~M. Gambetta.
+\newblock ``Quantum computing with {Qiskit}''~(2024).
+\newblock  \href{http://arxiv.org/abs/2405.08810}{arXiv:2405.08810}.
+
+\bibitem{sivarajah2021tket}
+Seyon Sivarajah, Silas Dilkes, Alexander Cowtan, Will Simmons, Alec Edgington,
+  and Ross Duncan.
+\newblock ``t{$|$}ket{$\rangle$}: A retargetable compiler for {NISQ} devices''.
+\newblock \href{https://dx.doi.org/10.1088/2058-9565/ab8e92}{Quantum Science
+  and Technology {\bf 6}, 014003}~(2021).
+
+\bibitem{cowtan2020phase}
+Alexander Cowtan, Silas Dilkes, Ross Duncan, Will Simmons, and Seyon Sivarajah.
+\newblock ``Phase gadget synthesis for shallow circuits''.
+\newblock In Proceedings 16th International Conference on Quantum Physics and
+  Logic (QPL 2019).
+\newblock \href{https://dx.doi.org/10.4204/EPTCS.318.13}{Volume 318 of
+  Electronic Proceedings in Theoretical Computer Science, pages 213--228}.
+\newblock ~(2020).
+\newblock  \href{http://arxiv.org/abs/1906.01734}{arXiv:1906.01734}.
+
+\bibitem{kissinger2020pyzx}
+Aleks Kissinger and John van~de Wetering.
+\newblock ``{PyZX}: Large scale automated diagrammatic reasoning''.
+\newblock In Proceedings 16th International Conference on Quantum Physics and
+  Logic (QPL 2019).
+\newblock \href{https://dx.doi.org/10.4204/EPTCS.318.14}{Volume 318 of
+  Electronic Proceedings in Theoretical Computer Science, pages 229--241}.
+\newblock ~(2020).
+
+\end{thebibliography}

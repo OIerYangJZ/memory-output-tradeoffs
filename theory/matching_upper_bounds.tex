@@ -1,5 +1,6 @@
-\subsection{Memory-capped constructions}
 \label{sec:w1-upper}
+The bounds are attained to leading order by explicit compilers, whose
+proofs are in Appendix~\ref{app:proofs}.
 
 \begin{proposition}[Block hybrid]
 \label{prop:w1-block-hybrid}
@@ -38,36 +39,6 @@ additive terms are not claimed to be optimal, and for $p$ comparable to $m$
 they dominate.
 \end{proposition}
 
-\begin{proof}
-Partition the first $q$ coordinates into at most $p$ consecutive blocks of
-size at most $h$.  Each pass is re-delivered by the input source
-(\cref{def:w1-pass-accounting}), so the compiler keeps no copy of the
-stream between passes.  On pass $t$, keep only the residues of block $t$ and add
-their first $r-1$ rounds modulo $Q$; when the final-round mates arrive,
-emit the corresponding aggregate base-$Q$ block.  The partial sums are held
-as one packed integer in $\mathsf{ser}_{\mathrm{store}}$ at its literal bit
-length (\cref{def:compiler}); the live packed block, indices, and framing
-give \eqref{eq:w1-upper-state} at the crossings.  Each block is packed
-separately, which
-costs at most one bit per block; together with the per-block framing this is
-the $O(p\log(mQrp))$ term in the output bound.  On the first pass,
-emit every share of each unselected coordinate in the declared round-major
-order, packing the residues of each round in base $Q$ and flushing them
-at the end of that round, so that the residues of round $r-1$ are written
-before the crossing; these rotations already have the correct product.  The selected coordinates can be balanced
-across the $p$ blocks, so the maximum block has size $\lceil q/p\rceil$.
-Their consecutive boundaries are a public function of $(m,p,q)$, so the
-header stores those integers rather than $p$ separate delimiters.
-The prefix contains $r-1$ residues and the
-whole output contains $r$ residues for each such coordinate, giving
-\eqref{eq:w1-upper-A} and \eqref{eq:w1-upper-output}.  If $ph\geq m$ there
-are no passthrough coordinates, $A_p$ is the header, and
-$p\lceil m/p\rceil\log_2Q\leq m\log_2Q+p\log_2Q$ gives the stated bound on
-$A_p+pS$ for any $r$.  For $r=2$ and general $q$, $(m-q)\log_2Q+p\lceil
-q/p\rceil\log_2Q$ is at most $m\log_2Q+p\log_2Q$, which gives the same
-bound; since every forward snapshot is bounded by the same
-block, the bound also holds for $A_p+\Sigma^{\to}_p$.
-\end{proof}
 
 \begin{proposition}[Semantic and randomized upper corners]
 \label{prop:w1-semantic-upper}
@@ -98,33 +69,10 @@ expected relative output
  \label{eq:w1-random-upper}
 \end{equation}
 Thus the randomized family-relative output lower bound is matched to
-leading order, up to framing and the binary-entropy additive term.  A
-self-contained $R_Z$-circuit upper bound is
-$O(\sum_j|\mathrm{supp}\,P_j|\log n+m\log Q)$ bits, which is
-$O(m(\log m+\log Q))$ for constant-weight characters on $n=\mathrm{poly}(m)$
-qubits, with at most $m$ rotations; no matching self-contained-bit or
-gate-count claim is made.
+leading order, up to framing and the binary-entropy term.  The
+explicit self-contained circuit, with at most $m$ rotations, takes
+$O(m(\log m+\log Q))$ bits for constant-weight characters on
+$n=\mathrm{poly}(m)$ qubits; no matching self-contained-bit or gate-count
+claim is made.
 \end{proposition}
 
-\begin{proof}
-Buffer the incoming aggregates $b$ at a time, held as one packed integer,
-and write each full buffer as one $\lceil b\log_2K\rceil$-bit integer and
-a final partial block of $b'<b$ digits in $\lceil b'\log_2K\rceil$ bits;
-the buffer, an index, and framing are the only live state.  Each block loses less than one bit to rounding,
-which gives the $\lceil m/b\rceil$ term.  For the single packed integer,
-let $P=\sum_{i\leq j}x_iK^{i-1}$ be the value of the first $j$ digits and
-$N=P+K^jR$ the final integer.  Since $K^jR\equiv0\pmod{2^{ej}}$ and the
-higher bits of $N$ depend on $R$, a correct write-once writer has written at
-most the low $ej$ bits of $P$, so at most $2^{ej+1}$ distinct written
-prefixes occur.  Two digit prefixes with the same snapshot and the same
-written prefix produce the same $N$ for every $R$, hence $P=P'$.  The
-$K^j$ values of $P$ therefore need at least $K^j/2^{ej+1}=K_{\mathrm{odd}}^{\,j}/2$
-distinct snapshots, which, being self-delimiting
-(\cref{def:w1-pass-accounting}), need at least
-$j\log_2K_{\mathrm{odd}}-1$ bits by Kraft's inequality; take
-$j=\lfloor m/2\rfloor$.  \Cref{prop:w1-stream-equivalence} gives
-semantic equality with the flat representation.  Prefix the output with the
-abort-coin branch tag for the randomized construction and take
-expectations.  The self-contained construction writes each nonzero
-$R_{P_j}(2\pi x_j/Q)$ with its address and rational parameter.
-\end{proof}

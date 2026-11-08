@@ -3,9 +3,9 @@
 
 The formal fields above are implemented by one canonical binary codec rather
 than by dimension-changing estimates.  The executable specification is
-\texttt{encoding/FORMAT.md}; its reference implementation is
-\texttt{encoding/codec.py}, and the only bit-accounting entry point is
-\texttt{instrumentation/resource\_accounting.py}.  A complete codec frame has
+\path{encoding/FORMAT.md}; its reference implementation is
+\path{encoding/codec.py}, and the only bit-accounting entry point is
+\path{instrumentation/resource_accounting.py}.  A complete codec frame has
 the form
 \begin{equation}
  \mathtt{UCCACCT0}\,\Vert\,
@@ -113,7 +113,7 @@ caches, or tapes.  Their matched-matrix and natural-factorial rows consequently
 report a file-backed \emph{API-boundary} snapshot and are diagnostic only; they
 are not promoted to measurements of the maximum private $B_{\rm cut}$.  Peak
 RSS remains a separate byte dimension and is not substituted for any field in
-\eqref{eq:info-budget}.
+\eqref{supp:eq:info-budget}.
 \end{remark}
 
 \begin{remark}[Self-contained and conditional descriptions]

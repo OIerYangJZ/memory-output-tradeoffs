@@ -7,13 +7,23 @@
 \usepackage[english]{babel}
 \usepackage{amsmath}
 \usepackage{microtype}
-\usepackage{amssymb,mathtools}
+\usepackage{amssymb,amsthm,mathtools}
+\usepackage{bm}
+\usepackage{multirow}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage[numbers]{natbib}
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage{longtable}
 \usepackage{graphicx}
 \usepackage{xcolor}
+% Cross-references to the main text resolve against the PRR build
+% (main_prr.aux), which must be compiled first.
+\usepackage{xr-hyper}
 \usepackage{hyperref}
+\externaldocument[][nocite]{main_prr}
+\usepackage[nameinlink,capitalise]{cleveref}
 \hypersetup{hidelinks}
 
 % quantumarticle pulls in revtex's ltxgrid/ltxutil; its legacy array patch
@@ -22,13 +32,43 @@
 \let\switch@array\relax
 \makeatother
 
+\newtheorem{definition}{Definition}[section]
+\newtheorem{theorem}[definition]{Theorem}
+\newtheorem{corollary}[definition]{Corollary}
+\newtheorem{proposition}[definition]{Proposition}
+\newtheorem{lemma}[definition]{Lemma}
+\newtheorem{remark}[definition]{Remark}
+\newtheorem{assumption}[definition]{Assumption}
+\renewcommand{\thesection}{S\arabic{section}}
+\renewcommand{\thetable}{S\arabic{table}}
+\renewcommand{\thefigure}{S\arabic{figure}}
+\renewcommand{\theequation}{S\arabic{equation}}
+
+\newcommand{\diagres}{\mathcal{R}_{\mathrm{diag}}}
+\newcommand{\pcharge}{\mathsf{prec}}
+\newcommand{\Ftwo}{\mathbb{F}_2}
+\DeclareMathOperator{\lcmop}{lcm}
 \newcommand{\DataNumber}[2]{#2}
 \input{generated/paper_numbers}
 
+% Packing-family scaling values filled by the experiment pipeline; see
+% research/packing_scaling/README.md for the frozen protocol.
+\newcommand{\pkResultsSummary}{All five paths completed at $m=4$; semantic
+UCC, \texttt{qiskit opt3}, staq rotation folding, and the phase-polynomial
+reference also completed at $m=8,16,32,64$, while rebased TKET PauliSimp
+returned \texttt{predicate\_error} at those four sizes because its output
+fell outside the Hadamard-free symbolic-certificate predicate. Semantic UCC
+and the phase-polynomial reference produced the same linear resource sequence,
+from $25/21/8$ gates/depth/\texttt{cx} at $m=4$ to $385/321/128$ at $m=64$.
+Among the completed external rows, \texttt{qiskit opt3} and staq produced
+$17m$ and $10m$ output gates, respectively, as the $r m$ token stream grew.
+Status outcomes are recorded separately and omitted from numerical curves.}
+
+\setlength{\emergencystretch}{3em}
 \begin{document}
 
-\title{Supplemental Material for ``Representation-Dependent
-Recoverability in Quantum Compilation''}
+\title{Supplemental Material for ``Memory--Output Tradeoffs for Merging
+Dispersed Rotations in Downstream Quantum Compilers''}
 \author{Jinze Yang}
 \affiliation{School of Physics, Xidian University, Xi'an 710071, China}
 \author{Yangyang Li}
@@ -43,9 +83,16 @@ Recoverability in Quantum Compilation''}
 
 This document contains expanded experimental protocols, negative results,
 status accounting, a historical/stress-result registry, and data provenance
-for the full-length main manuscript.  The headline proof and the earlier
-application appendices remain in the active main manuscript so that their
-assumptions, constructions, and scope are visible together.  Historical files
+for the main manuscript, together with material moved out of it: the record
+codec and field-level cut accounting (\cref{supp:codec}), the certificate
+domain and its soundness proof (\cref{supp:certificate}), the
+exact-semantics results for fixed-width circuits with full proofs
+(\cref{supp:exact}), additional experiments and protocols
+(\cref{supp:experiments}), artifact engineering (\cref{supp:artifact}),
+supplementary experiments (\cref{app:supplementary-experiments}), and
+reproducibility details (\cref{supp:reproducibility}).  The proofs of every
+result stated in the main text are in the main text or its appendix.
+Historical files
 are retained for auditability but are not promoted to canonical W3--W9
 evidence unless they appear in
 \path{data/manifest.yaml}.
@@ -341,5 +388,21 @@ historical diagnostics keep their original source paths and cannot support a
 new headline number unless registered.  The complete machine-readable audit is
 \path{data/frozen/data_audit.json}; the clean-room receipt is
 \path{data/frozen/clean_room_receipt.json}.
+
+\input{supp/codec}
+
+\section{Certificate domain and soundness}
+\label{supp:certificate}
+
+\input{../theory/certificate_soundness}
+
+\input{supp/exact}
+\input{supp/experiments}
+\input{appendix/appendix_B}
+\input{appendix/appendix_C_prxq}
+\input{supp/reproducibility}
+
+\bibliographystyle{quantum}
+\bibliography{references}
 
 \end{document}

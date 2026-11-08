@@ -1,0 +1,546 @@
+\section{Additional experiments and protocols}
+\label{supp:experiments}
+
+\subsection{Matched-representation benchmark}
+\begin{definition}[Matched-representation benchmark]
+\label{def:matched-benchmark}
+For one sampled coefficient vector $x$, a matched cell fixes the target
+$U_x$, target basis, hardware model, total error budget, timeout, memory cap,
+and seed, and then evaluates every compiler on nine representations:
+(1) semantic aggregate, (2) contiguous flat, (3) round-robin flat,
+(4) random commuting order, (5) masked-share/update stream, (6) locally
+folded flat, and (7--9) QASM, TKET, and ZX bridge records.  Each representation
+has a unique identifier, serialized payload, generation seed, and unitary
+certificate.  A cell is numerical only after the common certificate policy
+returns \texttt{completed\_valid}; unsupported predicates and malformed or
+inconclusive records remain status outcomes.
+\end{definition}
+
+The executable campaign uses the no-wrap target
+\begin{equation*}
+ U_x=\prod_{j=1}^{m}\exp\!\left(-\frac{i\pi x_j}{8K}Z_jZ_{j+1}\right),
+ \qquad x_j\in\{0,\ldots,K-1\}.
+\end{equation*}
+The active support is sampled at the requested density and each active
+coefficient is uniform on $\{1,\ldots,K-1\}$.  The frozen campaign contains
+\MatchedCells\ matched cells across the nine representations and five
+compilers.  Of these, \MatchedCompleted\ are
+\texttt{completed\_valid}; the remaining \MatchedPredicateErrors\ are retained
+as \texttt{predicate\_error}, all from the Qiskit masked-update path, and are
+not converted into numerical wins or losses.  Every raw row records the
+generation parameters, sampled $x$, realized density, schedule, basis,
+timeout, memory cap, runtime, peak RSS, gates, depth, CX, serialized input and
+output/IR bytes, bridge sequence, and certificate kind.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.94\textwidth]{../figures/representation_compiler_interaction.pdf}
+\caption{Complete matched-representation interaction summary.  Panel (a)
+reports certified completion probability for every representation--compiler
+pair; panel (b) reports serialized output size only among completed cells.
+Predicate errors remain status observations and never become numerical wins.}
+\label{fig:matched-interaction}
+\end{figure*}
+
+The representation main effect, compiler main effect, their interaction,
+completion probability, and scaling exponents are computed from the complete
+matrix.  The interaction is substantive: a compiler that reconstructs a
+phase polynomial or Pauli network before synthesis belongs on the
+semantic-capable side even when its input arrived through a flat bridge.
+
+\begin{lemma}[Dimension-preserving instrumentation]
+\label{lem:metric-conversion}
+For every file $A$ named by an accepted version-one cut manifest
+(\cref{prop:file-backed-accounting}), its reported size is exactly
+$8\operatorname{stat}(A).\mathtt{st\_size}$ bits.  Address growth is charged by
+the literal varint bytes; in particular $127$ and $128$ have different address
+lengths.  There is no representation-independent conversion from gate count,
+depth, \texttt{cx}, token count, or IR-node count to bits.
+\end{lemma}
+
+\begin{proof}
+The first statement is \cref{prop:file-backed-accounting}.  Gate or node count
+does not determine parameter numerators, denominators, qubit-address widths,
+edge endpoints, delimiters, or textual external payloads.  Thus equal-count
+objects can have different artifact lengths.  Conversely, family-relative
+dictionary codes can assign different self-contained circuits equal
+conditional length.  Only the named artifact file supplies a bit value.
+\end{proof}
+
+\begin{table*}[!t]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\textwidth}{@{}l l X X@{}}
+\toprule
+Dimension & Recorded field & Executable serializer or definition & Permitted comparison \\
+\midrule
+bits & \texttt{serialized\_input\_bits} & verified \texttt{SemanticStream}, \texttt{FlatUpdateStream}, or external-input artifact file & same codec/mode only \\
+bits & \texttt{B\_com\_bits} & verified literal committed-output artifact/prefix file & same codec only \\
+bits & five \texttt{B\_*\_bits} fields & verified control/store/window/parameter/IR files & corresponding formal field only \\
+records/tokens & source records & exact count before serialization & never converted by a constant \\
+IR nodes & \texttt{ir\_nodes} & structural node count reported separately from \texttt{B\_ir\_bits} & no implicit bit or gate conversion \\
+gates/depth/CX & structural output & Qiskit circuit operations, DAG depth, and \texttt{cx} count & like-for-like target basis \\
+\bottomrule
+\end{tabularx}
+\caption{Instrumentation contract.  Figures and tables compare within rows of
+one dimension.  Cross-dimensional discussion cites the explicit codec or is
+stated only qualitatively.}
+\label{tab:instrumentation-contract}
+\end{table*}
+
+\begin{table*}[!t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\textwidth}{@{}l X X@{}}
+\toprule
+Evidence class & Included experiments & Authorized inference \\
+\midrule
+instrumented theorem-model implementation & W3 traced reference compilers and restart verifier & directly tests the serialized commitment--cut coordinates and reports theorem residuals \\
+configured-pipeline diagnostic & matched matrix, external semantic baselines, exact-semantics witnesses, and natural workloads & compares observed tool behavior; never proves a lower bound \\
+model-specific consequence & fixed-total-error synthesis and surface-code calculation & reports consequences under the disclosed QRE; not a hardware-independent forecast \\
+\bottomrule
+\end{tabularx}
+\caption{Formal/evidentiary separation used throughout the paper.  The first
+row is the instrumented reference implementation of the declared resource
+model; configured external tools are not retroactively placed in that class.}
+\label{tab:evidence-classes}
+\end{table*}
+
+\subsection{TKET state-scaling scan (E7)}
+The stance of this campaign is explanatory, not competitive.  TKET
+PauliSimp and PyZX full-reduce already implement the semantic-first
+principle on their global IRs; the contribution of this paper is the
+bound that says what any such tool must pay to do so on a dispersed
+stream (\cref{thm:w1-unified-frontier,prop:frame-cross-cut}).  A preregistered scan probed
+this on a third-party compiler the authors do not control: with
+predictions and decision rule committed before execution
+(\path{PaperDraft/research/E7_preregistration.md}), TKET PauliSimp was
+run at $m\in\{8,16,32,64,128\}$, three seeds per size, with the TKET
+pass sequence DecomposeBoxes, AutoRebase, RemoveRedundancies, PauliSimp,
+RemoveRedundancies, AutoRebase, on the four-round
+masked modular-share streams of the benchmark generator
+(\texttt{masked\_share\_update} with $r=4$ and $K=8$: shares modulo
+$8K=64$ on the chain characters $Z_jZ_{j+1}$, every share nonzero and
+none equal to the target coefficient).  These are dispersed streams in
+the sense of \cref{def:w1-dispersed-stream} at a fixed modulus; they are
+not the two-round $Q=3$ masked-share device of \cref{thm:main-tradeoff}.
+In every cell PauliSimp reduced the non-Clifford rotations to one per
+active term ($508$ dispersed rotations to $127$ non-Clifford $R_z$ at
+$m=128$), although its output was not compact in size: at $m=128$ it
+emitted $688$--$705$ $R_z$ gates in total and $5.3$ times the input
+QASM text.  Its process memory (mean RSS increment) grew monotonically
+in $m$, with log--log slope $1.70$ over $m\in\{32,64,128\}$, the range
+selected by the preregistered noise-floor rule ($1.14$ over all five
+sizes), while the instrumented semantic-input control stayed flat
+($196\to199$ bytes over the same $16\times$ range of $m$).  The
+preregistered prediction was monotone growth with log--log slope in
+$[0.7,1.5]$, evaluated on $m\in\{32,64,128\}$ when the small sizes fall
+below the noise floor; it was thereby rejected under its own frozen
+decision rule, and we report it as rejected, noting that the all-size
+slope would have fallen inside the interval.  The frozen artifact is
+\path{data/frozen/e7_tket_state_scaling.json}.  Two limits on what this
+scan is allowed to establish should be stated explicitly.  First, the
+quantity measured at a third-party API boundary is a process-memory
+increment, which is a configured-pipeline diagnostic in
+the sense of \cref{tab:evidence-classes}: it is not promoted to a
+measurement of $B_{\mathrm{cut}}$ and is not commensurable with the $S$
+of the frontier.  The scan also has no arm that runs PauliSimp on the
+aggregated layer, and its input text itself grows linearly with $m$, so
+it does not isolate a cost of dispersal: it describes PauliSimp's
+behavior on dispersed streams, while the instrumented control shows only
+that the authors' semantic-input compiler stays flat.  It tests neither
+the constant nor the exponent of the frontier.  Second, because the measured quantity is not $B_{\mathrm{cut}}$, the scan
+cannot say how close this tool comes to the floor; growth faster than
+linear over the evaluated range is compatible with implementation
+structure (the pairwise commutation structure of a Pauli graph is itself
+superlinear in the number of terms).  No claim that
+the authors' implementation outperforms these tools is made or implied.
+
+\subsection{Third-party commitment-toll attempts (E8b)}
+Two attempts to carry the toll onto compilers we do not control were
+preregistered, and \textbf{both failed}; we report them rather than
+repair them.  The first asked only whether real toolchains spend
+committed bytes on addresses, and its design placed every rotation on
+the low-index qubits, so it never varied the address width it was meant
+to vary (a corrected rerun, labelled non-preregistered in the frozen
+artifact, finds $2.95$ bytes of growth per rotation over a $1000\times$
+range of register width, itself below the preregistered threshold).
+The second tested the mechanism directly: two circuits identical in $m$,
+in $k$, in rotation count and in angle multiset, differing only in
+whether the dispersed subset is an arithmetic progression or a random
+$k$-subset, emitted through Qiskit and \textsc{tket} and compared by
+compressed size.  Its textual control passed---the variants differ by
+under $0.05\%$ of raw bytes, so the comparison is not confounded by text
+length---and on \textsc{tket} the excess reaches $86\%$ of
+$\log_2\binom{m}{k}$ at $k=m/2$, comfortably above the seed noise.  But
+the excess peaks at $k=m/4$ rather than $k=m/2$, and on Qiskit it is
+$8\%$ of prediction and smaller than the seed-to-seed noise.  Under the
+frozen rule this is a failure, and we make no third-party claim.  Two
+causes are possible and the run does not separate them: a general-purpose
+compressor applied to a $100$\,kB instruction text may be too coarse an
+entropy estimator for a few hundred bytes of schedule information, and
+neither tool emits a round-major committed stream (Qiskit's OpenQASM~3
+output is ordered by qubit, and TKET's lists the full first layer before
+the dispersed addresses), so the design premise that the output is a
+committed prefix was not met.  The record-level toll of
+\cref{prop:commitment-toll} rests on the source-coding argument and on the
+instrumented device of \cref{fig:commit-toll}; whether it is measurable
+at a third-party API boundary remains open.
+
+\subsection{Packing-Family Scaling}
+\label{sec:packing-scaling}
+
+The complete multifactor campaign of \cref{fig:matched-interaction}
+is the primary matched-representation experiment.  The earlier 5-by-5 sweep
+below is retained as a separately keyed legacy diagnostic because it reaches
+the same maximum width under a 600\,s protocol and preserves its historical
+\texttt{predicate\_error} outcomes; it is not substituted for the new matrix.
+This legacy experiment links the growing-$m$ theorems to configured-pipeline
+behavior. Unlike the fixed-width witnesses below, which exercise the
+exact-semantics corollary, the packing family grows the number of
+independent phase terms $m$ at fixed tolerance.
+
+\paragraph{Instance.}
+We instantiate the no-wrap packing $U_x=\prod_jR_{P_j}(\Delta x_j)$,
+$x\in[K]_0^m$, $(K-1)\Delta\leq\pi$, with the chain of two-body
+characters $a_j = e_j + e_{j+1}$ on $n = m+1$ qubits, which are
+$\Ftwo$-independent for every $m$ (certified by rerunning the exact rank
+verifier), using the separate experimental setting $K=2$, $\Delta=\pi/4$.
+Each token is lowered as
+$RZ_i(\theta)\,RZ_j(\theta)\,CP_{ij}(-2\theta)$ under the convention
+used here. The balanced round-robin encoding, in which each of the $r$ rounds
+carries the residue $x_j/r$ on the schedule $\sigma(i)=((i-1)\bmod m)+1$,
+with dispersal $r = 4$ interleaves the
+terms across shared wires, so per-wire locality does not trivially reveal
+the aggregate.  Because these balanced tokens contain $x_j/r$, this is a
+pipeline diagnostic rather than an instance of the masked-share lower
+bound. The sweep is $m \in \{4, 8, 16, 32, 64\}$ under the
+standard 600\,s protocol of this section.  The exact rational-$\pi$ sidecar
+records $\Delta/\pi=1/4$ and per-token angle $1/16$.  Correctness uses the
+dense certificate for $n\leq6$ and the sound exact symbolic checker of
+\cref{def:certificate,prop:symbolic-soundness} for $n>6$; any output outside
+$\mathcal D_{\rm CPC}$ is status-only.
+
+\paragraph{Results.}
+\Cref{tab:packing-scaling} reports completed output gates as a function of $m$
+for semantic UCC, \texttt{qiskit opt3}, rebased TKET PauliSimp, staq
+rotation folding, and the phase-polynomial reference.
+\pkResultsSummary
+
+\begin{table*}[!t]
+\centering
+\small
+\begin{tabular}{cccccc}
+\toprule
+$m$ & semantic UCC & \texttt{qiskit opt3} & TKET PauliSimp (rebased) & staq folding & phase-poly ref \\
+\midrule
+4  & $25/21/8$ & $68/38/32$ & $54/20/10$ & $40/27/32$ & $25/21/8$ \\
+8  & $49/41/16$ & $136/54/64$ & \texttt{predicate\_error} & $80/39/64$ & $49/41/16$ \\
+16 & $97/81/32$ & $272/86/128$ & \texttt{predicate\_error} & $160/63/128$ & $97/81/32$ \\
+32 & $193/161/64$ & $544/150/256$ & \texttt{predicate\_error} & $320/111/256$ & $193/161/64$ \\
+64 & $385/321/128$ & $1088/278/512$ & \texttt{predicate\_error} & $640/207/512$ & $385/321/128$ \\
+\bottomrule
+\end{tabular}
+\caption{Packing-family scaling at growing $m$ (chain two-body
+characters, $n = m+1$, dispersal $r = 4$, 600\,s budget). Completed cells
+report output gates/depth/\texttt{cx}; status outcomes are recorded separately and are not
+scored as structural wins. No external row is claimed to be a member of
+the transducer class of \cref{supp:def:compiler}.}
+\label{tab:packing-scaling}
+\end{table*}
+
+The earlier two-panel figure is deliberately omitted.  Its gate panel is
+redundant with \cref{tab:packing-scaling}, while its family-relative bit panel
+was generated from a handwritten length formula and has no serialized
+per-point files.  Under the present accounting contract such a curve may be
+restored only by emitting the exact conditional-code artifacts (together with
+the family-dictionary digest) and measuring their files.
+
+\paragraph{Scope.}
+The external-toolchain rows are configured-pipeline diagnostics in the
+sense of this section: they neither prove nor test
+\cref{thm:main-tradeoff}, whose serialized inter-round cut budget is not
+observable from output gate counts, and no bit curve is inferred from these
+gate-count rows.  The separate reference-compiler implementation below
+measures theorem-model cut fields directly; it is not inferred from output
+gates.
+
+\subsection{Event-Level Commitment--Cut Tracing}
+\label{sec:cut-tracing}
+
+The instrumented suite contains echo/pass-through, full aggregation, 25\%,
+50\%, and 75\% memory-capped hybrids, and an IR-materializing control.  Each
+compiler follows the formal flat-update interface and records an event after
+every input update and commitment.  The campaign scans $m,r,K,\epsilon,p,S$,
+schedule, and seed, producing \TradeoffRuns\ complete run summaries plus the
+compressed raw event log and content-addressed trace archive.  At each named
+cut it records input position, pass, control/store/window/parameter and IR
+bytes, committed-output bytes, current output length, RSS, and wall time.
+The literal measured definitions are
+\begin{equation*}
+\begin{aligned}
+ B_{\rm com}(c)&=8|A_{\rm com,c}|_{\rm byte},\\
+ B_{\rm cross}(c)&=8\sum_{f\neq\mathrm{com}}|A_{f,c}|_{\rm byte}.
+\end{aligned}
+\end{equation*}
+RSS is recorded as an implementation metric and is not substituted for the
+serialized state cap $S$.  The analyzer recomputes the theorem residual from
+the trace coordinates and retains every anomaly or failed run.  All frozen
+points lie in the theorem-allowed region; no point was removed as an outlier.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.94\textwidth]{../figures/measured_tradeoff_frontier.pdf}
+\caption{Trace-derived commitment--crossing-state--IR surface.  The black
+edge marks measured Pareto points and the theoretical lower envelope is
+evaluated in the same serialized-bit coordinates.  Marker area in the raw
+slice reflects IR share; RSS is recorded separately.}
+\label{fig:measured-tradeoff}
+\end{figure*}
+
+Echo commits updates early with little retained state; full aggregation
+occupies the state-heavy compact-output corner; and the three capped hybrids
+interpolate through explicit block commitments.  Their scaling fits and
+residuals are reported with the raw points.  The measured quantities are the
+theorem's resources in its own bit units, but at these sizes they are
+dominated by a fixed serializer overhead of about $3.8$\,kbit, against a
+bound of $10$--$180$ bits; only the increments with $m$ are informative,
+and the trace is a consistency check of the accounting, not a test that
+could approach the bound.
+
+
+\subsection{Width-Axis Scaling}
+
+To check that the semantic path emits $O(m)$ phase records independently
+of the repetition count (\cref{sec:compiler}), we run a width-axis sweep for the
+\texttt{full\_pair\_cp} topology at $n = 4, 5, 6$.
+
+\begin{table*}[htbp]
+\centering
+\small
+\begin{tabular}{cccc}
+\toprule
+Width ($n$) & CP pairs ($m_{\rm CP}$) & Output Gates & CX Count \\
+\midrule
+4 & 6  & 42 & 12 \\
+5 & 10 & 65 & 20 \\
+6 & 15 & 93 & 30 \\
+\bottomrule
+\end{tabular}
+\caption{Width-axis scaling for the semantic Fourier-layer witness. For
+each fixed width $n$, the semantic output is constant across all tested
+repetition counts $r$. Across widths, the output scales as $O(m_{\rm CP})$
+where $m_{\rm CP} = n(n-1)/2$.}
+\label{tab:width-axis-scaling}
+\end{table*}
+
+The output is $O(m_{\rm CP})$ and independent of $r$ on this finite
+width sweep, consistent with that property.
+
+\subsection{Exact-semantics witness results}
+These experiments exercise the exact-semantics corollary
+(\cref{cor:exact-semantics-corollary}), not the main resource tradeoff
+(\cref{thm:main-tradeoff}). They verify the constructive
+aggregation path on the tested fixed-width witnesses and record how configured
+external pipelines behave predictably across the representation
+boundary. Full data tables are in \cref{app:supplementary-experiments}.
+
+The rational CP $H D^r H$ witness is the canonical fixed-width family
+with a constant 42-gate output.  \Cref{fig:fourier-separation} shows that
+semantic UCC remains at 42 gates while rebased TKET PauliSimp returns
+52--73 gates across five scales; materialize-first baselines grow
+linearly. The irrational independent-Pauli witness
+(\cref{fig:unbounded-witness-scaling}) shows the same pattern at
+27-gate constant output. Key observations:
+\begin{itemize}[leftmargin=1.5em]
+    \item Semantic UCC outputs a constant gate count (42 for rational,
+    27 for irrational) at all five tested sizes.
+    \item Rebased TKET PauliSimp recovers a small validated form at all
+    five scales on both witnesses, demonstrating that a generic pipeline
+    can cross the formal boundary by reconstructing an aggregate Pauli
+    representation.
+    \item Public staq rotation folding and \texttt{qiskit opt3} grow
+    linearly with input size.  TKET GuidedPauliSimp returns exactly the
+    gate count of its lowered input at every size: it applies PauliSimp only
+    inside \texttt{CircBox} regions, which these flat inputs do not
+    contain, so it is not an optimizing baseline here.
+    \item PyZX \texttt{full\_reduce} completes at small sizes but reaches
+    time or correctness limits at larger scales.
+\end{itemize}
+
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.72\textwidth]{figures/unbounded_witness_scaling.pdf}
+\caption{Configured-pipeline scaling on the irrational independent-Pauli
+witness. Semantic UCC remains at 27 gates. Rebased TKET PauliSimp
+returns a small validated form at all five scales, demonstrating that a
+generic pipeline can cross the formal boundary by reconstructing an
+aggregate Pauli representation. Public staq rotation folding and
+\texttt{qiskit opt3} grow with input size; TKET GuidedPauliSimp, which
+acts only inside \texttt{CircBox} regions, does not optimize these flat
+inputs.
+PyZX \texttt{full\_reduce} completes at 4k and 10k, fails the numerical
+tolerance at 20k, and reaches the time budget at larger scales.
+Status-only cells are omitted from numerical curves.}
+\label{fig:unbounded-witness-scaling}
+\end{figure*}
+
+These measurements exercise the constructive side of
+\cref{cor:exact-semantics-corollary} and disclose the behavior of
+configured tools; they do not prove the resource bound for any real
+compiler. The rebased PauliSimp result is the classification's positive
+prediction in action: once a generic pass sequence reconstructs a compact
+Pauli representation, the output need not grow with the flat input.
+Conversely, staq's growing output and PyZX's status outcomes are not
+impossibility results---they are diagnostics of configured-pipeline
+behavior on this specific witness family.
+
+\subsection{Mechanism Ablation}
+
+\begin{table*}[tbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabularx}{\textwidth}{@{}r *{4}{>{\raggedright\arraybackslash}X}@{}}
+\toprule
+Requested & semantic UCC & artifact UCC (Fourier disabled) & \texttt{qiskit} opt3 & phase-poly ref \\
+\midrule
+4{,}000 & 42 / 2.9 s & 9{,}588 / 18.2 s & 9{,}588 / 1.0 s & 42 / 0.2 s \\
+10{,}000 & 42 / 8.7 s & 23{,}988 / 94.2 s & 23{,}988 / 5.1 s & 42 / 0.3 s \\
+20{,}000 & 42 / 28.5 s & 47{,}988 / 339.3 s & 47{,}988 / 19.5 s & 42 / 0.3 s \\
+50{,}000 & 42 / 20.7 s & timeout & 119{,}988 / 120.9 s & 42 / 0.5 s \\
+100{,}000 & 42 / 28.7 s & timeout & 239{,}988 / 485.8 s & 42 / 0.8 s \\
+\bottomrule
+\end{tabularx}
+\caption{Fourier-layer semantic-path ablation on the fixed-width
+$H D^r H$ witness under the 600\,s budget. Disabling the Fourier-layer
+IR completes at 4k--20k but materializes large outputs; 50k--100k exceed
+the budget. Fourier-enabled semantic UCC and the phase-polynomial
+reference return 42 gates at all sizes.}
+\label{tab:fourier-ablation}
+\end{table*}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.72\textwidth]{figures/fourier_ablation.pdf}
+\caption{Mechanism ablation for the fixed-width $H D^r H$ witness.
+Disabling the Fourier-layer semantic path yields completed but linearly
+large outputs through 20k and timeout rows at 50k and 100k, while
+Fourier-enabled semantic UCC and the phase-polynomial reference recover
+the canonical 42-gate circuit.}
+\label{fig:fourier-ablation}
+\end{figure*}
+
+The ablation strengthens the mechanism interpretation. With Fourier-layer
+IR disabled, the compiler completes at 4k, 10k, and 20k but materializes
+the same large non-aggregated outputs as \texttt{qiskit opt3}; at 50k
+and 100k the disabled-IR rows exceed the 600\,s budget
+(\cref{fig:fourier-ablation}). In contrast, the Fourier-enabled semantic
+UCC path and the phase-polynomial reference recover the same 42-gate
+canonical circuit at every tested size. Thus the constant form is tied
+to semantic Fourier-layer lifting and coefficient aggregation, not
+merely to a favorable ordering of flat post-lowering passes.
+
+\subsection{Strong baselines and the real-task panel}
+The canonical comparison includes Qiskit
+\texttt{optimization\_level=3}~\cite{javadi2024qiskit}, TKET
+PauliSimp~\cite{sivarajah2021tket,cowtan2020phase}, PyZX
+\texttt{full\_reduce}~\cite{kissinger2020pyzx}, and the authors' exact
+phase-table reference.  Each external tool has a recommended-native and a
+unified $\{\mathrm{CX},R_Z,H\}$ configuration, with pass sequence, bridge,
+version, seed, timeout, memory cap, and certificate frozen.  TKET supplies the
+Pauli-network/global-semantic class and PyZX the graph/global-IR class.  The
+complete W4 interaction is \cref{fig:matched-interaction}; the independent W5
+campaign and bridge-loss accounting are described in
+\cref{sec:external-baselines}.  Historical staq, GuidedPauliSimp, and
+phase-polynomial diagnostic rows remain in their original immutable campaigns
+and are not silently mixed into the canonical matrix.  This comparison is
+diagnostic, not a contest: the external tools are treated as independent
+implementations of the semantic-first principle whose internal costs the
+bounds of \cref{sec:physical-dispersed,sec:w1-unified-frontier} explain,
+gate-count parity is reported as parity, and no headline ranks the
+authors' pipeline above them.
+
+\begin{table*}[htbp]
+\centering
+\scriptsize
+\begin{tabular}{lccccc}
+\toprule
+Instance & Method & Gates & Depth & CX & Runtime \\
+\midrule
+\multirow{4}{*}{\texttt{REAL24-phase-est.}}
+  & translation only & 159{,}838 & 121{,}214 & 67{,}608 & 0.080 s \\
+  & qiskit opt3 & 166{,}805 & 119{,}204 & 58{,}491 & 1.298 s \\
+  & upstream UCC v0.4.12 default & 471{,}819 & 328{,}271 & 58{,}491 & 80.923 s \\
+  & semantic UCC & 166{,}805 & 119{,}204 & 58{,}491 & 1.364 s \\
+\midrule
+\multirow{4}{*}{\texttt{REAL24-grover}}
+  & translation only & 85{,}403 & 55{,}892 & 33{,}408 & 0.104 s \\
+  & qiskit opt3 & 79{,}029 & 54{,}163 & 32{,}544 & 0.552 s \\
+  & upstream UCC v0.4.12 default & 287{,}047 & 152{,}298 & 32{,}544 & 1.915 s \\
+  & semantic UCC & 79{,}029 & 54{,}163 & 32{,}544 & 0.556 s \\
+\midrule
+\multirow{4}{*}{\texttt{REAL24-qaoa}}
+  & translation only & 36{,}512 & 2{,}416 & 23{,}808 & 0.022 s \\
+  & qiskit opt3 & 36{,}512 & 2{,}416 & 23{,}808 & 0.272 s \\
+  & upstream UCC v0.4.12 default & 167{,}833 & 7{,}133 & 23{,}808 & 1.010 s \\
+  & semantic UCC & 36{,}512 & 2{,}416 & 23{,}808 & 0.273 s \\
+\bottomrule
+\end{tabular}
+\caption{Official real algorithm-family instances. The upstream UCC
+v0.4.12 row is the frozen pre-semantic default defined in the provenance
+map of \cref{supp:artifact}. Parity with \texttt{qiskit opt3} reflects conservative
+portfolio selection; this panel is an anti-regression check, not evidence
+of semantic recovery.}
+\label{tab:real-instances}
+\end{table*}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.82\textwidth]{figures/real_instance_grouped_bar.png}
+\caption{Total output gate counts on the three official real instances.
+The semantic UCC artifact matches \texttt{qiskit opt3}-level output
+quality while substantially improving over the upstream UCC v0.4.12
+pre-semantic default.}
+\label{fig:real-instance-bars}
+\end{figure*}
+
+These results support the recoverability-parity regime
+(\cref{fig:real-instance-bars}): the semantic artifact matches
+\texttt{qiskit opt3}-level output quality while improving over the
+upstream UCC v0.4.12 pre-semantic default of \cref{tab:real-instances} by
+approximately 65\%, 73\%, and 78\% gate reduction on the three instances.
+The selector cost in this panel is the implementation's conservative
+structural score $\kappa = \text{gates} + \text{depth} +
+10\cdot\text{multi-qubit}$, with candidate-control guards; the factor
+$10$ is a conservative lexicographic-style heuristic favoring lower
+two-qubit exposure, used only for portfolio selection. This explains the
+\texttt{REAL24-phase-est.} row (source key
+\texttt{phase\_estimation\_real}) in which translation-only has fewer
+total gates than the selected candidate but more \texttt{cx} gates and a
+higher score ($957{,}132$ versus $870{,}919$). This quality-recovery
+pattern shows that semantic lifting behaves as an anti-regression
+mechanism on workloads beyond the minimal Fourier construction.
+
+\subsection{Natural-workload figures}
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.94\textwidth]{../figures/natural_workload_summary.pdf}
+\caption{Matched natural-family comparison and negative controls.  Error bars
+are paired bootstrap 95\% intervals over matched cells; because the
+generators of several families do not depend on the seed, these intervals
+describe the spread over cells, not seed replication.  All structured
+families and both controls are retained.}
+\label{fig:natural-summary}
+\end{figure*}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.92\textwidth]{../figures/ablation_effects.pdf}
+\caption{All six factorial gate-count main effects and pairwise interactions.
+Zero-effect factors are displayed rather than omitted.}
+\label{fig:natural-factorial}
+\end{figure*}

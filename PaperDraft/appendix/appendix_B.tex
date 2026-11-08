@@ -1,5 +1,6 @@
 \section{Artifact Engineering}
-The implementation described in this appendix is a bounded recognizer and
+\label{supp:artifact}
+The implementation described in this section is a bounded recognizer and
 candidate controller, not a general maximal-commuting-region extractor for
 arbitrary DAGs.  Its semantic nodes are limited to explicit supported
 Pauli/phase records, local phase-ladder or Fourier spans,
@@ -147,7 +148,7 @@ it does not override the distinct \texttt{RP23}, \texttt{HW24}, or
 \texttt{REAL24} campaign manifests. The table maps paper-facing names to
 JSON keys, tool/pass sequences, artifact flags, and source classes. The older
 real-panel UCC default row is included only to define that frozen-control
-label in the main text and Appendix~C; it is not one of the canonical methods
+label in \cref{app:supplementary-experiments}; it is not one of the canonical methods
 used in the 600\,s external-baseline comparison.
 
 \begin{table*}[t]
@@ -294,7 +295,7 @@ The canonical W3 theorem-model reference compilers are under
 \path{compiler/reference_streaming/} and are driven by
 \path{scripts/run_tradeoff_sweep.py}.  After every input update, their
 version-one event schema records \texttt{committed\_output\_bytes}, the five
-cut fields from \eqref{eq:info-budget}, pass index, RSS, elapsed nanoseconds,
+cut fields from \eqref{supp:eq:info-budget}, pass index, RSS, elapsed nanoseconds,
 artifact paths, and digests.  The verifier reopens and decodes every field
 slice and checks the committed-prefix hashes.  The complete 592-run campaign
 is stored under \path{data/runs/w3-tradeoff-20260802-local/}; its registered
@@ -369,9 +370,10 @@ to a runner cannot silently change a displayed row.
 
 Every headline statement in the abstract, introduction, resource section, and
 conclusion is registered with one primary theorem, proposition, table, figure,
-or artifact test and an explicit scope.  The machine-readable source is
-\path{research/claim_evidence/claim_evidence.json}; the compact reader map is
-\cref{tab:claim-evidence}.
+or artifact test and an explicit scope (\cref{tab:claim-evidence}).  The
+machine-readable file \path{research/claim_evidence/claim_evidence.json}
+records the claim set of the earlier full-length version and is kept
+unchanged as a historical record.
 
 \begin{table*}[tbp]
 \centering
@@ -380,11 +382,21 @@ or artifact test and an explicit scope.  The machine-readable source is
 \toprule
 ID & claim location & primary evidence & authorized scope \\
 \midrule
-\input{research/claim_evidence/claim_evidence_rows.tex} \\
+C01 & abstract/introduction & \cref{def:w1-pass-accounting,supp:def:compiler} & formal model only \\
+C02 & abstract/introduction & \cref{thm:w1-unified-frontier} & round-major forward scans re-delivered by the source; the $p$ forward crossings charged \\
+C03 & introduction & \cref{thm:w1-one-pass-mask} & deterministic one-pass zero-error compilers; $K\in\{Q-1,Q\}$ \\
+C04 & abstract/introduction & \cref{prop:w1-block-hybrid,prop:w1-semantic-upper} & family-relative codes; leading order for $p\log(mQrp)=o(m\log Q)$ \\
+C05 & introduction & \cref{prop:physical-instantiation,prop:frame-cross-cut} & coefficient-freedom hypothesis; rounds contiguous up to generator-permuting Clifford records \\
+C06 & abstract/introduction & \cref{prop:commitment-toll} & record-level executed commitment; mask-uniform compilers \\
+C07 & abstract/introduction & \cref{cor:unitary-toll} & unitary-level executed commitment; proved, not measured \\
+C08 & introduction & \cref{fig:eta-sweep,fig:commit-toll} & instrumented masked-share device; constructive checks \\
+C09 & validation & \cref{fig:matched-interaction,fig:fourier-separation} & configured-pipeline diagnostics \\
+C10 & resource consequences & \cref{tab:resource-consequence,fig:qre-sensitivity} & one disclosed surface-code model; inputs differ between pipelines \\
+C11 & application workloads & \cref{tab:natural-factorial,fig:natural-factorial} & 9 families; six-qubit dense certificates \\
+C12 & compiler & \cref{prop:symbolic-soundness} & declared symbolic domain only \\
 \bottomrule
 \end{tabularx}
-\caption{Claim--evidence matrix.  The full JSON also contains the exact claim
-text and evidence class.  A claim outside the displayed scope is not made by
-this paper.}
+\caption{Claim--evidence matrix for the main text.  A claim outside the
+displayed scope is not made by the paper.}
 \label{tab:claim-evidence}
 \end{table*}
