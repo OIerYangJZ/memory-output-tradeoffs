@@ -1,7 +1,9 @@
 # Representation as a Resource
 
 This repository contains the manuscript, frozen experimental evidence, and
-reproduction code for *Representation as a Resource*.
+reproduction code for *Memory–Output Tradeoffs for Merging Dispersed
+Rotations in Downstream Quantum Compilers* (J. Yang, Y. Li, X.-H. Deng).
+An earlier version is available as arXiv:2609.29210.
 
 ## Reproduce the submitted artifact
 
@@ -15,7 +17,9 @@ distribution providing `latexmk`, then run from the repository root:
 On a fresh clone the command creates `.venv` from the committed `uv.lock`.
 It audits the committed frozen W3--W9 datasets, regenerates registered tables
 and figures, runs the full test suite and clean-room subset, and builds the
-canonical, arXiv, Quantum-submission, and supplement PDFs. The first run can
+canonical, arXiv, Quantum-submission, and supplement PDFs. The Physical
+Review Research submission version is built separately with
+`latexmk -pdf main_prr.tex` in `PaperDraft/`. The first run can
 require network access to populate uv's package cache; subsequent runs can use
 the locked local environment without network access.
 
